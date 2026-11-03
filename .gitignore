@@ -1,0 +1,11 @@
+.env
+*.db
+node_modules/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+venv/
+.venv/
+dist/
+
+prompt_for_other_pc.txt

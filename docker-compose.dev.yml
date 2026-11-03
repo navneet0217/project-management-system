@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: mysql:8.0
+    env_file: .env
+    ports:
+      - "127.0.0.1:3306:3306"   # local dev only; production compose will not publish this
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+volumes:
+  mysql_data:
