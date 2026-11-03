@@ -1,0 +1,56 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+    # no ports: the database is only reachable from the private Docker network
+
+  backend:
+    image: ghcr.io/${GHCR_OWNER:-local}/pms-backend:${IMAGE_TAG:-latest}
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      SECRET_KEY: ${SECRET_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/${GHCR_OWNER:-local}/pms-web:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8080:80"
+    restart: unless-stopped
+
+  # Quick tunnel: gives a public https://<random>.trycloudflare.com URL (see `docker compose logs cloudflared`)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://web:80
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

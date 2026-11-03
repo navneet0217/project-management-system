@@ -1,6 +1,16 @@
 # Progress Tracker
 
+## Docker / CI-CD (built, local stack verified)
+- `docker-compose.yml` = mysql + backend + web (Nginx + built React) + cloudflared quick tunnel. Run: `docker compose up -d --build`, then `docker compose exec -T backend alembic upgrade head`. App on http://localhost:8080, public URL: `docker compose logs cloudflared | findstr trycloudflare`.
+- `.github/workflows/ci-cd.yml`: backend + frontend checks -> build/push images to GHCR (tag = commit SHA + latest) -> deploy on self-hosted runner (needs repo variable `ENABLE_DEPLOY=true` and the secrets listed in `.env.example`). Not yet tested on GitHub.
+- Rollback: set `IMAGE_TAG=<old sha>` in `.env`, then `docker compose pull && docker compose up -d`.
+
 ## Current day: Day 5 (frontend). Backend (Days 1-4) is DONE and tested.
+
+## Frontend stack (rewritten)
+React + Vite + TypeScript, **Redux Toolkit** (auth + UI slices in `src/store`), **Ant Design** (UI, dark mode via `ConfigProvider`), React Router, Axios, Recharts. Tailwind, Zustand and react-hot-toast were removed.
+Day 5 pages built: login, dashboard, projects (+detail with members, tasks, comments/activity drawer), my tasks, users (ADMIN). `pnpm build` passes; not yet tested end-to-end against the running backend.
+Run from `frontend/`: `pnpm install`, `pnpm dev` (proxies /api to localhost:8000).
 
 ## Done
 - [x] Monorepo structure, .gitignore, .env.example files, docker-compose.dev.yml (MySQL)
