@@ -3,6 +3,7 @@ Then tell me in simple English: what we are building, what is already done, and 
 After that, continue with the next task step by step. Explain each decision simply, give exact terminal commands with the directory, and wait for my confirmation before moving to the next day.
 
 
+important to check public url : docker compose logs cloudflared | findstr trycloudflare
 
 
 Reminder: at the end of each day, update docs/PROGRESS.md, then commit and push.

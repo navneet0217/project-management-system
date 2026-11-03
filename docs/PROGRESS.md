@@ -5,7 +5,8 @@
 - Next idea: SSO via OAuth2/OIDC (Google/GitHub), see chat notes.
 
 ## Docker / CI-CD (built, local stack verified)
-- `docker-compose.yml` = mysql + backend + web (Nginx + built React) + cloudflared quick tunnel. Run: `docker compose up -d --build`, then `docker compose exec -T backend alembic upgrade head`. App on http://localhost:8080, public URL: `docker compose logs cloudflared | findstr trycloudflare`.
+- `docker-compose.yml` = mysql + backend + web (Nginx + built React) + ngrok tunnel (free static domain, stable URL). Run: `docker compose up -d --build`, then `docker compose exec -T backend alembic upgrade head`. App on http://localhost:8080; public URL = `https://<NGROK_DOMAIN>`.
+- ngrok setup: claim a free domain at dashboard.ngrok.com/domains. GitHub secret `NGROK_AUTHTOKEN`, GitHub **variable** `NGROK_DOMAIN` (a variable, not a secret, so it is not masked in logs).
 - `.github/workflows/ci-cd.yml`: backend + frontend checks -> build/push images to GHCR (tag = commit SHA + latest) -> deploy on self-hosted runner (needs repo variable `ENABLE_DEPLOY=true` and the secrets listed in `.env.example`). Not yet tested on GitHub.
 - Rollback: set `IMAGE_TAG=<old sha>` in `.env`, then `docker compose pull && docker compose up -d`.
 
