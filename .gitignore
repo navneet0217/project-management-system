@@ -8,4 +8,4 @@ venv/
 .venv/
 dist/
 
-prompt_for_other_pc.txt
+# prompt_for_other_pc.txt
