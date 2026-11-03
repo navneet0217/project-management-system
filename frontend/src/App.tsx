@@ -4,6 +4,8 @@ import { useAppSelector } from './store'
 import ProtectedRoute from './routes/ProtectedRoute'
 import AppLayout from './layouts/AppLayout'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
+import RedirectIfAuthed from './routes/RedirectIfAuthed'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
@@ -20,7 +22,8 @@ export default function App() {
       <AntApp>
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
+            <Route path="/signup" element={<RedirectIfAuthed><Signup /></RedirectIfAuthed>} />
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route index element={<Dashboard />} />

@@ -4,11 +4,19 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.rate_limit import auth_rate_limit
 from app.db.session import get_db
-from app.models import User
-from app.schemas.user import LoginRequest, RefreshRequest, TokenPair, UserOut
-from app.services import auth_service
+from app.models import Role, User
+from app.schemas.user import LoginRequest, RefreshRequest, SignupRequest, TokenPair, UserCreate, UserOut
+from app.services import auth_service, user_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/signup", response_model=TokenPair, status_code=201, dependencies=[Depends(auth_rate_limit)])
+def signup(data: SignupRequest, db: Session = Depends(get_db)):
+    user = user_service.create_user(
+        db, UserCreate(email=data.email, full_name=data.full_name, password=data.password, role=Role.DEVELOPER)
+    )
+    return auth_service.issue_tokens(db, user)
 
 
 @router.post("/login", response_model=TokenPair, dependencies=[Depends(auth_rate_limit)])

@@ -1,5 +1,9 @@
 # Progress Tracker
 
+## Auth pages
+- Signup: `POST /api/v1/auth/signup` {email, full_name, password}; role is always DEVELOPER (server-side), returns tokens. Frontend `/signup` + redesigned `/login` share `components/AuthShell.tsx`. 40 backend tests pass.
+- Next idea: SSO via OAuth2/OIDC (Google/GitHub), see chat notes.
+
 ## Docker / CI-CD (built, local stack verified)
 - `docker-compose.yml` = mysql + backend + web (Nginx + built React) + cloudflared quick tunnel. Run: `docker compose up -d --build`, then `docker compose exec -T backend alembic upgrade head`. App on http://localhost:8080, public URL: `docker compose logs cloudflared | findstr trycloudflare`.
 - `.github/workflows/ci-cd.yml`: backend + frontend checks -> build/push images to GHCR (tag = commit SHA + latest) -> deploy on self-hosted runner (needs repo variable `ENABLE_DEPLOY=true` and the secrets listed in `.env.example`). Not yet tested on GitHub.

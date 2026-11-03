@@ -16,6 +16,16 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class SignupRequest(BaseModel):
+    """Public self-signup. No role field on purpose: the server always assigns DEVELOPER."""
+
+    email: EmailStr
+    full_name: str = Field(min_length=2, max_length=120)
+    password: str = Field(min_length=8, max_length=128)
+
+    _pw = field_validator("password")(_check_password)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(min_length=10, max_length=200)
 

@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { authApi } from '../api/auth'
 import { REFRESH_KEY } from '../api/axios'
-import type { User } from '../types'
+import type { TokenPair, User } from '../types'
 
 interface AuthState {
   accessToken: string | null
@@ -12,14 +12,22 @@ interface AuthState {
 
 const initialState: AuthState = { accessToken: null, user: null, initialized: false }
 
+async function startSession(tokens: TokenPair, dispatch: (a: unknown) => unknown) {
+  localStorage.setItem(REFRESH_KEY, tokens.refresh_token)
+  dispatch(authSlice.actions.setAccessToken(tokens.access_token))
+  return authApi.me()
+}
+
 export const login = createAsyncThunk(
   'auth/login',
-  async (cred: { email: string; password: string }, { dispatch }) => {
-    const tokens = await authApi.login(cred.email, cred.password)
-    localStorage.setItem(REFRESH_KEY, tokens.refresh_token)
-    dispatch(authSlice.actions.setAccessToken(tokens.access_token))
-    return authApi.me()
-  },
+  async (cred: { email: string; password: string }, { dispatch }) =>
+    startSession(await authApi.login(cred.email, cred.password), dispatch),
+)
+
+export const signup = createAsyncThunk(
+  'auth/signup',
+  async (data: { email: string; full_name: string; password: string }, { dispatch }) =>
+    startSession(await authApi.signup(data), dispatch),
 )
 
 // Restore the session on page load using the stored refresh token.
@@ -56,6 +64,9 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(login.fulfilled, (state, action) => {
+        state.user = action.payload
+      })
+      .addCase(signup.fulfilled, (state, action) => {
         state.user = action.payload
       })
       .addCase(restoreSession.fulfilled, (state, action) => {
