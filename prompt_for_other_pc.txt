@@ -1,0 +1,21 @@
+Read .github/copilot-instructions.md, docs/PROJECT_CONTEXT.md and docs/PROGRESS.md.
+Then tell me in simple English: what we are building, what is already done, and what the next task is.
+After that, continue with the next task step by step. Explain each decision simply, give exact terminal commands with the directory, and wait for my confirmation before moving to the next day.
+
+
+
+
+Reminder: at the end of each day, update docs/PROGRESS.md, then commit and push.
+Next: I’ll build the React frontend (Day 5): login, role-based navigation, users, projects and tasks, plus dark mode. Say “go” once the backend runs on your MySQL, or tell me if you hit an error.
+
+
+
+standard practice:
+
+git checkout dev
+git add .
+git commit -m "your message"
+git push origin dev
+
+
+
