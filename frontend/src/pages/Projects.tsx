@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Input, Progress, Select, Space, Table } from 'antd'
+import { Button, Progress, Select, Space, Table } from 'antd'
+import SearchInput from '../components/SearchInput'
 import { PlusOutlined } from '@ant-design/icons'
 import { projectsApi } from '../api/projects'
 import { useAppSelector } from '../store'
 import { PageHeaderRow } from '../components/PageHeaderRow'
 import ProjectFormModal from '../components/ProjectFormModal'
-import { PROJECT_STATUSES, StatusTag, toOptions } from '../components/StatusTag'
+import { StatusTag } from '../components/StatusTag'
+import { PROJECT_STATUSES, toOptions } from '../lib/options'
 import type { Page, Project, ProjectStatus } from '../types'
 
 export default function Projects() {
@@ -45,14 +47,13 @@ export default function Projects() {
         }
       />
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
-          placeholder="Search projects"
-          allowClear
+        <SearchInput
+          placeholder="Search projects, managers, descriptions"
+          width={340}
           onSearch={(v) => {
             setSearch(v)
             setPage(1)
           }}
-          style={{ width: 260 }}
         />
         <Select
           allowClear

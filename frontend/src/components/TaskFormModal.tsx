@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { DatePicker, Form, Input, Modal, Select } from 'antd'
 import dayjs from 'dayjs'
 import { tasksApi } from '../api/tasks'
-import { PRIORITIES, toOptions } from './StatusTag'
+import { PRIORITIES, toOptions } from '../lib/options'
 import type { Priority, Task, UserOption } from '../types'
 
 interface FormValues {

@@ -6,6 +6,7 @@ import AuthShell from '../components/AuthShell'
 import { signup } from '../store/authSlice'
 import { useAppDispatch } from '../store'
 import { errorMessage } from '../api/axios'
+import { APP_NAME } from '../components/Logo'
 
 interface SignupForm {
   full_name: string
@@ -36,7 +37,7 @@ export default function Signup() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Join your team on ProjectHub. New accounts start as developers."
+      subtitle={`Join your team on ${APP_NAME}. New accounts start as developers.`}
       footer={
         <>
           Already have an account? <Link to="/login">Sign in</Link>

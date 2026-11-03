@@ -6,6 +6,7 @@ import AuthShell from '../components/AuthShell'
 import { login } from '../store/authSlice'
 import { useAppDispatch } from '../store'
 import { errorMessage } from '../api/axios'
+import { APP_NAME } from '../components/Logo'
 
 export default function Login() {
   const dispatch = useAppDispatch()
@@ -32,7 +33,7 @@ export default function Login() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to continue to ProjectHub"
+      subtitle={`Sign in to continue to ${APP_NAME}`}
       footer={
         <>
           New here? <Link to="/signup">Create an account</Link>

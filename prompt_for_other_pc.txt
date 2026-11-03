@@ -5,6 +5,7 @@ After that, continue with the next task step by step. Explain each decision simp
 
 important to check public url : docker compose logs cloudflared | findstr trycloudflare
 
+https://github.com/theclaymethod/unslop - De- AI the code for better readability and maintainability
 
 Reminder: at the end of each day, update docs/PROGRESS.md, then commit and push.
 Next: I’ll build the React frontend (Day 5): login, role-based navigation, users, projects and tasks, plus dark mode. Say “go” once the backend runs on your MySQL, or tell me if you hit an error.

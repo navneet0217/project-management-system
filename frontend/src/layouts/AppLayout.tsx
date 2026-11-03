@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Avatar, Button, Dropdown, Layout, Menu, Space, Typography, theme } from 'antd'
+import { Avatar, Button, Dropdown, Grid, Layout, Menu, Skeleton, Space, Tooltip, theme } from 'antd'
 import {
   CheckSquareOutlined,
   DashboardOutlined,
   FolderOpenOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   MoonOutlined,
   SunOutlined,
   TeamOutlined,
@@ -14,6 +16,9 @@ import { logout } from '../store/authSlice'
 import { setSiderCollapsed, toggleDarkMode } from '../store/uiSlice'
 import { useAppDispatch, useAppSelector } from '../store'
 import { StatusTag } from '../components/StatusTag'
+import GlobalSearch from '../components/GlobalSearch'
+import Logo, { APP_NAME } from '../components/Logo'
+import { BRAND_GRADIENT } from '../lib/brand'
 
 const { Header, Sider, Content } = Layout
 
@@ -22,6 +27,8 @@ export default function AppLayout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { token } = theme.useToken()
+  const screens = Grid.useBreakpoint()
+  const isMobile = !screens.lg
   const user = useAppSelector((s) => s.auth.user)!
   const { darkMode, siderCollapsed } = useAppSelector((s) => s.ui)
 
@@ -48,42 +55,67 @@ export default function AppLayout() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
-        collapsible
-        collapsed={siderCollapsed}
-        onCollapse={(c) => dispatch(setSiderCollapsed(c))}
-        breakpoint="lg"
+        className="app-sider"
+        width={240}
+        collapsedWidth={isMobile ? 0 : 76}
+        collapsed={isMobile ? true : siderCollapsed}
+        trigger={null}
       >
-        <Typography.Title
-          level={4}
-          style={{ color: '#fff', textAlign: 'center', margin: 16, whiteSpace: 'nowrap' }}
-        >
-          {siderCollapsed ? 'PM' : 'ProjectHub'}
-        </Typography.Title>
+        <div className="sider-logo">
+          <Logo size={34} />
+          {!siderCollapsed && !isMobile && <span>{APP_NAME}</span>}
+        </div>
         <Menu
           theme="dark"
           mode="inline"
           items={items}
           selectedKeys={selected}
           onClick={({ key }) => navigate(key)}
+          style={{ background: 'transparent', borderInlineEnd: 0, flex: 1 }}
         />
+        {!isMobile && (
+          <Tooltip title={siderCollapsed ? 'Expand sidebar' : ''} placement="right">
+            <button
+              type="button"
+              className="sider-toggle"
+              aria-label={siderCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              onClick={() => dispatch(setSiderCollapsed(!siderCollapsed))}
+            >
+              {siderCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              {!siderCollapsed && <span>Collapse</span>}
+            </button>
+          </Tooltip>
+        )}
       </Sider>
-      <Layout>
+      <Layout style={{ background: 'transparent' }}>
         <Header
-          style={{
-            background: token.colorBgContainer,
-            padding: '0 24px',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            gap: 12,
-          }}
+          className="app-header"
+          style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
         >
-          <Button
-            type="text"
-            aria-label="Toggle dark mode"
-            icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
-            onClick={() => dispatch(toggleDarkMode())}
-          />
+          {isMobile ? (
+            <Space style={{ marginRight: 'auto' }}>
+              {items.map((i) => (
+                <Tooltip key={i.key} title={i.label}>
+                  <Button
+                    type={selected.includes(i.key) ? 'primary' : 'text'}
+                    icon={i.icon}
+                    onClick={() => navigate(i.key)}
+                  />
+                </Tooltip>
+              ))}
+            </Space>
+          ) : (
+            <GlobalSearch />
+          )}
+          <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
+            <Button
+              type="text"
+              shape="circle"
+              aria-label="Toggle dark mode"
+              icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
+              onClick={() => dispatch(toggleDarkMode())}
+            />
+          </Tooltip>
           <Dropdown
             menu={{
               items: [{ key: 'logout', icon: <LogoutOutlined />, label: 'Log out' }],
@@ -91,17 +123,23 @@ export default function AppLayout() {
             }}
           >
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar>{user.full_name.charAt(0).toUpperCase()}</Avatar>
-              <span>{user.full_name}</span>
-              <StatusTag value={user.role} />
+              <Avatar style={{ background: BRAND_GRADIENT }}>
+                {user.full_name.charAt(0).toUpperCase()}
+              </Avatar>
+              {!isMobile && <span>{user.full_name}</span>}
+              {!isMobile && <StatusTag value={user.role} />}
             </Space>
           </Dropdown>
         </Header>
-        <Content style={{ margin: 24 }}>
-          <Outlet />
+        <Content className="app-content">
+          {/* key = path, so every page change replays the fade-in animation */}
+          <div key={pathname} className="page-fade">
+            <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
+              <Outlet />
+            </Suspense>
+          </div>
         </Content>
       </Layout>
     </Layout>
   )
 }
-

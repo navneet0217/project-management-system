@@ -89,3 +89,26 @@ def test_project_completion_percentage(client, world):
     project = client.get(f"/api/v1/projects/{world.p1.id}", headers=auth(world.m1)).json()
     assert project["completion_percentage"] == 100.0
     assert project["member_count"] == 2
+
+
+def _search(client, user, text):
+    res = client.get("/api/v1/projects", params={"search": text}, headers=auth(user))
+    assert res.status_code == 200
+    return {p["name"] for p in res.json()["items"]}
+
+
+def test_project_search_matches_name_description_and_manager(client, world):
+    client.patch(
+        f"/api/v1/projects/{world.p1.id}", json={"description": "Quarterly marketing refresh"}, headers=auth(world.m1)
+    )
+    assert _search(client, world.admin, "one") == {"Project One"}  # name
+    assert _search(client, world.admin, "marketing") == {"Project One"}  # description
+    assert _search(client, world.admin, "m2") == {"Project Two"}  # manager name
+
+
+def test_project_search_respects_visibility(client, world):
+    # m1 can only ever see their own project, even when searching for another manager's name
+    assert _search(client, world.m1, "m2") == set()
+    assert _search(client, world.m1, "project") == {"Project One"}
+    # dev1 is a member of p1 only
+    assert _search(client, world.dev1, "project") == {"Project One"}

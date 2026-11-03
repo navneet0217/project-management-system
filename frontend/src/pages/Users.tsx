@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Form, Input, Modal, Select, Space, Switch, Table, Typography, message } from 'antd'
+import SearchInput from '../components/SearchInput'
 import { PlusOutlined } from '@ant-design/icons'
 import { usersApi, type UserCreatePayload, type UserUpdatePayload } from '../api/users'
 import { useAppSelector } from '../store'
 import { PageHeaderRow } from '../components/PageHeaderRow'
-import { ROLES, StatusTag, toOptions } from '../components/StatusTag'
+import { StatusTag } from '../components/StatusTag'
+import { ROLES, toOptions } from '../lib/options'
 import type { Page, Role, User } from '../types'
 
 const PASSWORD_RULE = {
@@ -75,14 +77,12 @@ export default function Users() {
         }
       />
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+        <SearchInput
           placeholder="Search name or email"
-          allowClear
           onSearch={(v) => {
             setSearch(v)
             setPage(1)
           }}
-          style={{ width: 260 }}
         />
         <Select
           allowClear

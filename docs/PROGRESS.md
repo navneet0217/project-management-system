@@ -1,5 +1,8 @@
 # Progress Tracker
 
+## Branding
+- App name: **Tasklane** (name + logo in `frontend/src/components/Logo.tsx`, favicon `frontend/public/favicon.svg`, colours in `frontend/src/lib/brand.ts`). Teal theme (#0d9488). Logo = three rising Kanban lanes on a teal tile.
+
 ## Auth pages
 - Signup: `POST /api/v1/auth/signup` {email, full_name, password}; role is always DEVELOPER (server-side), returns tokens. Frontend `/signup` + redesigned `/login` share `components/AuthShell.tsx`. 40 backend tests pass.
 - Next idea: SSO via OAuth2/OIDC (Google/GitHub), see chat notes.
@@ -27,12 +30,18 @@ Run from `frontend/`: `pnpm install`, `pnpm dev` (proxies /api to localhost:8000
 - [ ] Verified against real MySQL 8 (tests/seed ran on SQLite) -> do this first on your PC, see below
 - [ ] Context files committed and pushed to GitHub
 
-## Next task
-1. Verify the backend on MySQL (commands below).
-2. Day 5: React frontend core (see docs/API.md for every endpoint):
-   layout + sidebar with role-based navigation, login page, auth context, Axios instance with
-   refresh-token interceptor, protected routes, user management page, project list/detail,
-   task list + form, toasts, loading/error states, dark mode.
+## Next task (done: backend, frontend core, signup, Docker, CI/CD, deploy on own PC with Cloudflare quick tunnel)
+Build in this order. After 1-9 the MVP is demo-ready.
+1. [x] Kanban board: dnd-kit drag-and-drop, optimistic move with rollback, pointer-based drop (`components/KanbanBoard.tsx`, Board/List tabs on project page).
+2. [x] Dashboard KPI cards with a 3D look (tilt on hover, gradients, count-up) in `components/KpiCard.tsx`.
+3. [x] UI polish: indigo theme, gradient sidebar, sticky header, page fade, skeletons, empty states, mobile layout, dark mode. Still open: replace deprecated antd `List`, use `App.useApp()` for message (static `message` warns about theme).
+4. [x] Frontend refactor: constants in `lib/options.ts`, `StatusTag` is component-only, project page split into `components/project/*`. Lint is clean.
+5. [x] Performance: lazy-loaded routes, main bundle 1.7 MB -> 129 KB (Dashboard chunk 359 KB because of Recharts).
+6. Tests in CI: Vitest + React Testing Library (login, signup, route guards), more backend tests.
+7. Profile and account: edit profile, change password, forgot/reset password.
+8. Notifications and a project activity feed.
+9. Security hardening: refresh token in an httpOnly cookie, stricter rate limits, daily DB backup.
+10. Later (not needed for the demo): SSO (Google/GitHub OAuth2, needs a stable URL), README with screenshots and an architecture diagram.
 
 ## How to run the backend (from project-management-system/)
 ```bash

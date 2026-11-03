@@ -1,7 +1,385 @@
 body {
   margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ---------- App shell ---------- */
+.app-sider {
+  /* Pinned to the viewport so the Collapse button is always visible, even on long pages */
+  position: sticky !important;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #042f2e 0%, #0b4a46 55%, #0f766e 100%) !important;
+  box-shadow: 4px 0 24px rgba(4, 47, 46, 0.25);
+}
+.app-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.app-sider .ant-menu {
+  overflow-y: auto;
+}
+[data-theme='dark'] .app-sider {
+  background: linear-gradient(180deg, #04181a 0%, #072a2b 60%, #0a3a3a 100%) !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+}
+.sider-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 48px;
+  margin: 8px 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.sider-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.sider-toggle .anticon {
+  font-size: 18px;
+}
+.sider-logo {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #fff;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sider-logo .anticon {
+  font-size: 26px;
+  color: #5eead4;
+}
+.app-sider .ant-menu-item-selected {
+  box-shadow: inset 3px 0 0 #5eead4;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* soft teal wash on the left fading into the normal surface colour, so the bar never looks blank */
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ant-color-primary, #0d9488) 10%, var(--ant-color-bg-container, #fff)) 0%,
+    var(--ant-color-bg-container, #fff) 65%
+  ) !important;
+  backdrop-filter: blur(8px);
+}
+.global-search,
+.global-search.ant-select-outlined,
+.global-search.ant-select-focused,
+.global-search.ant-select-open {
+  /* the select wrapper draws its own box/focus ring; hide it so only the pill is visible */
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  border-radius: 999px;
+}
+.global-search {
+  align-self: center;
+  height: 38px;
+  margin-right: auto;
+  width: min(460px, 100%);
+}
+.global-search .ant-select-content {
+  height: 38px;
+  align-items: center;
+}
+.global-search .ant-input-affix-wrapper {
+  height: 38px;
+  border-radius: 999px;
+  padding-inline: 14px;
+  background: color-mix(in srgb, var(--ant-color-primary, #0d9488) 6%, var(--ant-color-bg-container, #fff));
+}
+.gs-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+.gs-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.gs-name {
+  font-weight: 600;
+}
+.gs-row-sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ant-color-text-secondary, #666);
+  min-width: 0;
+}
+.gs-desc {
+  min-width: 0;
+  max-width: 280px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  opacity: 0.75;
+}
+.app-content {
+  padding: 28px;
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+}
+@media (max-width: 575px) {
+  .app-content {
+    padding: 16px;
+  }
+}
+
+.page-fade {
+  animation: pageFade 0.35s ease both;
+}
+@keyframes pageFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.soft-card {
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  border: 0 !important;
+}
+[data-theme='dark'] .soft-card,
+[data-theme='dark'] .kpi-card {
+  box-shadow: none;
+  border: 1px solid var(--ant-color-border-secondary) !important;
+}
+[data-theme='dark'] .kanban-card {
+  box-shadow: none;
+  border: 1px solid var(--ant-color-border-secondary);
+  border-left-width: 4px;
+}
+[data-theme='dark'] .auth-brand {
+  background: linear-gradient(135deg, #04181a 0%, #0a3a3a 55%, #0f766e 100%);
+}
+.theme-fab {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+}
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+  font-size: 13px;
+}
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+/* ---------- KPI cards (compact) ---------- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.kpi-card {
+  position: relative;
+  padding: 14px 16px 14px 18px;
+  border-radius: 12px;
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition:
+    transform 0.15s ease-out,
+    box-shadow 0.2s ease;
+  will-change: transform;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--from), var(--to));
+}
+.kpi-card:hover {
+  box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.18);
+}
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kpi-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ant-color-text-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  color: var(--from);
+  background: color-mix(in srgb, var(--from) 14%, transparent);
+  flex-shrink: 0;
+}
+.kpi-value {
+  margin-top: 6px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--ant-color-text, #1f1f1f);
+}
+
+/* ---------- Kanban ---------- */
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.kanban-col {
+  background: rgba(127, 127, 127, 0.08);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+.kanban-col.over {
+  background: rgba(13, 148, 136, 0.12);
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.5) inset;
+}
+.kanban-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  font-weight: 600;
+  border-top: 4px solid;
+  border-radius: 14px 14px 0 0;
+}
+.kanban-col-head .count {
+  background: rgba(127, 127, 127, 0.2);
+  border-radius: 999px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+.kanban-col-body {
+  flex: 1;
+  padding: 4px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanban-card {
+  background: var(--ant-color-bg-container, #fff);
+  border-radius: 10px;
+  border-left: 4px solid #1677ff;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.kanban-card.movable {
+  cursor: grab;
+}
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+}
+.kanban-card.dragging {
+  opacity: 0.35;
+}
+.kanban-card.overlay {
+  cursor: grabbing;
+  transform: rotate(3deg) scale(1.03);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.3);
+}
+.kanban-card-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+.kanban-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.kanban-card-meta .due.overdue {
+  color: #f5222d;
+  font-weight: 600;
+}
+
+/* ---------- Login / Signup ---------- */
 .auth-shell {
   min-height: 100vh;
   display: grid;
@@ -9,7 +387,7 @@ body {
 }
 
 .auth-brand {
-  background: linear-gradient(135deg, #1d39c4 0%, #531dab 55%, #9254de 100%);
+  background: linear-gradient(135deg, #115e59 0%, #0f766e 50%, #14b8a6 100%);
   display: flex;
   align-items: center;
   padding: 48px;

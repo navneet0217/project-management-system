@@ -4,7 +4,7 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { projectsApi } from '../api/projects'
 import { usersApi } from '../api/users'
 import { useAppSelector } from '../store'
-import { PROJECT_STATUSES, toOptions } from './StatusTag'
+import { PROJECT_STATUSES, toOptions } from '../lib/options'
 import type { Project, ProjectPayload, ProjectStatus, UserOption } from '../types'
 
 interface FormValues {

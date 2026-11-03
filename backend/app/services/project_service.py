@@ -102,7 +102,12 @@ def list_projects(
 ) -> tuple[list[ProjectOut], int]:
     stmt = _scope(user)
     if search:
-        stmt = stmt.where(Project.name.ilike(f"%{search}%"))
+        # Matches project name, description or the manager's name (scoping above still applies).
+        like = f"%{search.strip()}%"
+        manager_ids = select(User.id).where(User.full_name.ilike(like))
+        stmt = stmt.where(
+            Project.name.ilike(like) | Project.description.ilike(like) | Project.manager_id.in_(manager_ids)
+        )
     if status:
         stmt = stmt.where(Project.status == status)
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0

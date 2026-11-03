@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Input, Select, Space, Table, Tag } from 'antd'
+import { Select, Space, Table, Tag } from 'antd'
+import SearchInput from '../components/SearchInput'
 import { tasksApi } from '../api/tasks'
 import { PageHeaderRow } from '../components/PageHeaderRow'
 import TaskDrawer from '../components/TaskDrawer'
 import TaskStatusSelect from '../components/TaskStatusSelect'
-import { PRIORITIES, StatusTag, TASK_STATUSES, toOptions } from '../components/StatusTag'
+import { StatusTag } from '../components/StatusTag'
+import { PRIORITIES, TASK_STATUSES, toOptions } from '../lib/options'
 import type { Page, Priority, Task, TaskStatus } from '../types'
 
 export default function MyTasks() {
@@ -45,14 +47,12 @@ export default function MyTasks() {
     <>
       <PageHeaderRow title="My tasks" />
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+        <SearchInput
           placeholder="Search tasks"
-          allowClear
           onSearch={(v) => {
             setSearch(v)
             setPage(1)
           }}
-          style={{ width: 240 }}
         />
         <Select
           allowClear

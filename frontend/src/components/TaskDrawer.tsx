@@ -3,7 +3,8 @@ import { Button, Drawer, Empty, Input, List, Tabs, Timeline, Typography } from '
 import { tasksApi } from '../api/tasks'
 import { useFetch } from '../hooks/useFetch'
 import QueryState from './QueryState'
-import { StatusTag, label } from './StatusTag'
+import { StatusTag } from './StatusTag'
+import { label } from '../lib/options'
 import type { Task, TaskActivity } from '../types'
 
 const describe = (a: TaskActivity) => {

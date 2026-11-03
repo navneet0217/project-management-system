@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Select, message } from 'antd'
 import { tasksApi } from '../api/tasks'
-import { TASK_STATUSES, toOptions } from './StatusTag'
+import { TASK_STATUSES, toOptions } from '../lib/options'
 import type { Task, TaskStatus } from '../types'
 
 export default function TaskStatusSelect({

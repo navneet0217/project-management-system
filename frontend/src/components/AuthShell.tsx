@@ -1,10 +1,14 @@
-import { Typography } from 'antd'
+import { Button, Tooltip, Typography } from 'antd'
 import {
-  CheckCircleFilled,
   DashboardOutlined,
+  MoonOutlined,
   ProjectOutlined,
+  SunOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
+import Logo, { APP_NAME } from './Logo'
+import { toggleDarkMode } from '../store/uiSlice'
+import { useAppDispatch, useAppSelector } from '../store'
 
 const FEATURES = [
   { icon: <ProjectOutlined />, text: 'Plan projects and track every task' },
@@ -24,15 +28,27 @@ export default function AuthShell({
   children: React.ReactNode
   footer: React.ReactNode
 }) {
+  const dispatch = useAppDispatch()
+  const darkMode = useAppSelector((s) => s.ui.darkMode)
+
   return (
     <div className="auth-shell">
+      <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
+        <Button
+          className="theme-fab"
+          shape="circle"
+          aria-label="Toggle dark mode"
+          icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
+          onClick={() => dispatch(toggleDarkMode())}
+        />
+      </Tooltip>
       <aside className="auth-brand">
         <div className="auth-brand-inner">
           <div className="auth-logo">
-            <CheckCircleFilled /> ProjectHub
+            <Logo size={40} /> {APP_NAME}
           </div>
           <Typography.Title level={2} style={{ color: '#fff', marginTop: 32 }}>
-            Ship projects, not spreadsheets.
+            Plan it. Track it. Ship it.
           </Typography.Title>
           <ul className="auth-features">
             {FEATURES.map((f) => (
