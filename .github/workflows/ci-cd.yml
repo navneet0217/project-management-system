@@ -98,45 +98,70 @@ jobs:
       packages: read
     defaults:
       run:
-        shell: bash
+        shell: powershell
     steps:
       - uses: actions/checkout@v4
 
+      # Windows runner: use PowerShell (plain "bash" resolves to WSL and cannot read the runner's script path).
+      # Native commands write progress to stderr, so errors are checked via $LASTEXITCODE instead.
       - name: Write .env from GitHub Secrets
         run: |
-          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          cat > .env <<EOF
-          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
-          MYSQL_USER=${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
-          SECRET_KEY=${{ secrets.SECRET_KEY }}
-          CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
-          GHCR_OWNER=${OWNER}
-          IMAGE_TAG=${{ github.sha }}
-          EOF
+          $owner = "${{ github.repository_owner }}".ToLower()
+          $lines = @(
+            'MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}',
+            'MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}',
+            'MYSQL_USER=${{ secrets.MYSQL_USER }}',
+            'MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}',
+            'SECRET_KEY=${{ secrets.SECRET_KEY }}',
+            'CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}',
+            "GHCR_OWNER=$owner",
+            'IMAGE_TAG=${{ github.sha }}'
+          )
+          [IO.File]::WriteAllText("$PWD\.env", ($lines -join "`n") + "`n")
 
       - name: Pull images from GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          $ErrorActionPreference = 'Continue'
+          "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           docker compose pull backend web
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Start containers
-        run: docker compose up -d --remove-orphans
+        run: |
+          $ErrorActionPreference = 'Continue'
+          docker compose up -d --remove-orphans
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Run database migrations
-        run: docker compose exec -T backend alembic upgrade head
+        run: |
+          $ErrorActionPreference = 'Continue'
+          # the backend container may still be starting, so retry for a while
+          for ($i = 0; $i -lt 20; $i++) {
+            docker compose exec -T backend alembic upgrade head
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Start-Sleep -Seconds 3
+          }
+          docker compose logs --tail=50 backend
+          exit 1
 
       - name: Health check
         run: |
-          for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8080/api/v1/health; then exit 0; fi
-            sleep 3
-          done
+          $ErrorActionPreference = 'Continue'
+          for ($i = 0; $i -lt 30; $i++) {
+            try {
+              $r = Invoke-WebRequest -UseBasicParsing -Uri http://localhost:8080/api/v1/health
+              if ($r.StatusCode -eq 200) { Write-Output $r.Content; exit 0 }
+            } catch { }
+            Start-Sleep -Seconds 3
+          }
           docker compose logs --tail=100
           exit 1
 
       - name: Show public URL
         run: |
-          sleep 5
-          docker compose logs cloudflared 2>&1 | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' | tail -1
+          $ErrorActionPreference = 'Continue'
+          Start-Sleep -Seconds 8
+          $m = docker compose logs cloudflared 2>&1 | Select-String -Pattern 'https://[a-z0-9-]+\.trycloudflare\.com' -AllMatches
+          if ($m) { "PUBLIC URL: " + $m[-1].Matches[-1].Value } else { "Tunnel URL not ready yet: run 'docker compose logs cloudflared'" }
+          exit 0
