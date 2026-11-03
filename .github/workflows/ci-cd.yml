@@ -119,19 +119,22 @@ jobs:
           )
           [IO.File]::WriteAllText("$PWD\.env", ($lines -join "`n") + "`n")
 
-      - name: Pull images from GHCR
+      - name: Get images (GHCR pull, else build locally)
         run: |
           $ErrorActionPreference = 'Continue'
           "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          if ($LASTEXITCODE -ne 0) { exit 1 }
           docker compose pull backend web
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "GHCR pull failed (package private or login denied). Building images on this PC instead."
+            docker compose build backend web
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          exit 0
 
       - name: Start containers
         run: |
           $ErrorActionPreference = 'Continue'
-          docker compose up -d --remove-orphans
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          docker compose up -d --remove-orphans --no-build
 
       - name: Run database migrations
         run: |
