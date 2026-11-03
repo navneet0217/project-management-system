@@ -513,11 +513,39 @@ body {
   text-align: center;
 }
 
+.auth-mobile-brand {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .auth-shell {
     grid-template-columns: 1fr;
   }
   .auth-brand {
     display: none;
+  }
+  .auth-form-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .auth-mobile-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+  .auth-mobile-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ant-color-text, #1f1f1f);
+  }
+  .auth-mobile-tagline {
+    font-size: 14px;
+    color: var(--ant-color-primary, #0d9488);
+    font-weight: 500;
   }
 }

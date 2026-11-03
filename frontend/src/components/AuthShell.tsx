@@ -62,6 +62,12 @@ export default function AuthShell({
       </aside>
 
       <main className="auth-form-side">
+        {/* Phones hide the big brand panel, so show the logo and tagline here instead */}
+        <div className="auth-mobile-brand">
+          <Logo size={44} />
+          <div className="auth-mobile-name">{APP_NAME}</div>
+          <div className="auth-mobile-tagline">Plan it. Track it. Ship it.</div>
+        </div>
         <div className="auth-card">
           <Typography.Title level={2} style={{ marginBottom: 4 }}>
             {title}

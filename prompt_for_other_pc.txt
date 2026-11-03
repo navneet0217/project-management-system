@@ -23,3 +23,16 @@ git push origin dev
 
 
 Redux Toolkit (RTK) paired with Vite and Ant Design
+
+
+Unslop utilisation 
+redux toolkit 
+modularisation of codebase and folder structure 
+unit testing md file for each modules
+
+prepare a architecture diagram for the project
+create a README.md for each module explaining its purpose and usage
+ensure consistent code formatting and linting across the project
+set up CI/CD pipeline for automated testing and deployment
+document the CI/CD process and any required environment variables
+optimize performance (take less time api seconds to respond) and refactor code where necessary
