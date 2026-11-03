@@ -104,7 +104,7 @@ export default function GlobalSearch() {
       onChange={setText}
       onSelect={onSelect}
       filterOption={false}
-      popupMatchSelectWidth={440}
+      popupMatchSelectWidth={Math.min(440, window.innerWidth - 24)}
       notFoundContent={empty ? <div style={{ padding: 8, textAlign: 'center' }}>{empty}</div> : null}
     >
       <Input

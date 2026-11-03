@@ -92,21 +92,7 @@ export default function AppLayout() {
           className="app-header"
           style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
         >
-          {isMobile ? (
-            <Space style={{ marginRight: 'auto' }}>
-              {items.map((i) => (
-                <Tooltip key={i.key} title={i.label}>
-                  <Button
-                    type={selected.includes(i.key) ? 'primary' : 'text'}
-                    icon={i.icon}
-                    onClick={() => navigate(i.key)}
-                  />
-                </Tooltip>
-              ))}
-            </Space>
-          ) : (
-            <GlobalSearch />
-          )}
+          <GlobalSearch />
           <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
             <Button
               type="text"
@@ -139,6 +125,21 @@ export default function AppLayout() {
             </Suspense>
           </div>
         </Content>
+        {isMobile && (
+          <nav className="mobile-nav" aria-label="Main navigation">
+            {items.map((i) => (
+              <button
+                key={i.key}
+                type="button"
+                className={selected.includes(i.key) ? 'active' : ''}
+                onClick={() => navigate(i.key)}
+              >
+                {i.icon}
+                <span>{i.label}</span>
+              </button>
+            ))}
+          </nav>
+        )}
       </Layout>
     </Layout>
   )
