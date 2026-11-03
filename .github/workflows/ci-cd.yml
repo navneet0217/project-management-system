@@ -28,14 +28,74 @@ jobs:
       - run: ruff check .
       - run: python -m pytest -q
 
-  # Frontend job (lint, test, build) will be added on Day 5/6.
+  frontend:
+    name: Frontend (lint + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm build
+
+  images:
+    name: Build and push images (GHCR)
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lowercase owner
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/pms-backend:${{ github.sha }}
+            ghcr.io/${{ env.OWNER }}/pms-backend:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/pms-web:${{ github.sha }}
+            ghcr.io/${{ env.OWNER }}/pms-web:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
 
   deploy:
     name: Deploy to my PC
-    needs: [backend]
-    # Runs only on pushes to dev, and only after you switch it on (see Step 3).
+    needs: [images]
+    # Runs only on pushes to dev, and only after you switch it on (repo variable ENABLE_DEPLOY=true).
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.ENABLE_DEPLOY == 'true'
     runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: read
     defaults:
       run:
         shell: bash
@@ -44,6 +104,7 @@ jobs:
 
       - name: Write .env from GitHub Secrets
         run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           cat > .env <<EOF
           MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
@@ -51,10 +112,17 @@ jobs:
           MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
           SECRET_KEY=${{ secrets.SECRET_KEY }}
           CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
+          GHCR_OWNER=${OWNER}
+          IMAGE_TAG=${{ github.sha }}
           EOF
 
-      - name: Build and start containers
-        run: docker compose up -d --build --remove-orphans
+      - name: Pull images from GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker compose pull backend web
+
+      - name: Start containers
+        run: docker compose up -d --remove-orphans
 
       - name: Run database migrations
         run: docker compose exec -T backend alembic upgrade head
@@ -67,3 +135,8 @@ jobs:
           done
           docker compose logs --tail=100
           exit 1
+
+      - name: Show public URL
+        run: |
+          sleep 5
+          docker compose logs cloudflared 2>&1 | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' | tail -1
