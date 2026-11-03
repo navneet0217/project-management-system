@@ -166,5 +166,9 @@ jobs:
           $ErrorActionPreference = 'Continue'
           Start-Sleep -Seconds 8
           $m = docker compose logs cloudflared 2>&1 | Select-String -Pattern 'https://[a-z0-9-]+\.trycloudflare\.com' -AllMatches
-          if ($m) { "PUBLIC URL: " + $m[-1].Matches[-1].Value } else { "Tunnel URL not ready yet: run 'docker compose logs cloudflared'" }
+          if ($m) {
+            $url = $m[-1].Matches[-1].Value
+            "PUBLIC URL: $url"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Public URL`n$url"
+          } else { "Tunnel URL not ready yet: run 'docker compose logs cloudflared'" }
           exit 0
