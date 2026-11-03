@@ -114,8 +114,6 @@ jobs:
             'MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}',
             'SECRET_KEY=${{ secrets.SECRET_KEY }}',
             'CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}',
-            'NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTHTOKEN }}',
-            'NGROK_DOMAIN=${{ vars.NGROK_DOMAIN }}',
             "GHCR_OWNER=$owner",
             'IMAGE_TAG=${{ github.sha }}'
           )
@@ -166,14 +164,11 @@ jobs:
       - name: Show public URL
         run: |
           $ErrorActionPreference = 'Continue'
-          Start-Sleep -Seconds 5
-          $url = "https://${{ vars.NGROK_DOMAIN }}"
-          "PUBLIC URL: $url"
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Public URL`n$url"
-          try {
-            $r = Invoke-WebRequest -UseBasicParsing -Uri "$url/api/v1/health" -Headers @{ 'ngrok-skip-browser-warning' = '1' }
-            "Tunnel check: $($r.StatusCode) $($r.Content)"
-          } catch {
-            "Tunnel not reachable yet. Check: docker compose logs ngrok"
-          }
+          Start-Sleep -Seconds 12
+          $m = docker compose logs cloudflared 2>&1 | Select-String -Pattern 'https://[a-z0-9-]+\.trycloudflare\.com' -AllMatches
+          if ($m) {
+            $url = $m[-1].Matches[-1].Value
+            "PUBLIC URL: $url"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Public URL`n$url"
+          } else { "Tunnel URL not ready yet: run 'docker compose logs cloudflared'" }
           exit 0
