@@ -1,10 +1,14 @@
 import api from './axios'
-import type { Page, Role, User, UserOption } from '../types'
+import type { Page, Role, User, UserListItem, UserOption, UserProfile } from '../types'
+
+export type UserSortField = 'full_name' | 'email' | 'role' | 'is_active' | 'created_at'
 
 export interface UserListParams {
   search?: string
   role?: Role
   is_active?: boolean
+  sort_by?: UserSortField
+  order?: 'asc' | 'desc'
   page?: number
   size?: number
 }
@@ -25,7 +29,8 @@ export interface UserUpdatePayload {
 
 export const usersApi = {
   list: (params: UserListParams) =>
-    api.get<Page<User>>('/users', { params }).then((r) => r.data),
+    api.get<Page<UserListItem>>('/users', { params }).then((r) => r.data),
+  profile: (id: number) => api.get<UserProfile>(`/users/${id}/profile`).then((r) => r.data),
   create: (data: UserCreatePayload) => api.post<User>('/users', data).then((r) => r.data),
   update: (id: number, data: UserUpdatePayload) =>
     api.patch<User>(`/users/${id}`, data).then((r) => r.data),

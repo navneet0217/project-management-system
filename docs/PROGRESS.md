@@ -3,6 +3,14 @@
 ## Branding
 - App name: **Tasklane** (name + logo in `frontend/src/components/Logo.tsx`, favicon `frontend/public/favicon.svg`, colours in `frontend/src/lib/brand.ts`). Teal theme (#0d9488). Logo = three rising Kanban lanes on a teal tile.
 
+## Requirements batch 2 (spec pasted by user, built one screen at a time)
+- [x] 1. Dashboard: View all on the 4 cards, clickable Total projects / Total tasks (recent-5 popups), role tag removed, new `GET /tasks` + "All tasks" page (admin/manager).
+- [x] 2. Users: Active/Inactive switch in the table (confirm on deactivate), server-side column sorting, Projects column, View profile popup (`GET /users/{id}/profile`).
+- [x] 3. My Tasks: developer can add / edit / delete own tasks (shared `TasksTable` + `TaskFormModal` self mode), column sorting, status dropdown.
+- [x] 4. Projects: delete-task popup with mandatory reason, Activity tab (audit service + `project_activities` table, Alembic 0002), member-add popup showing user details with Cancel / Add.
+- [ ] 5. Integration pass on the deployed stack: run `alembic upgrade head` (deploy does it), then check each screen on the public URL.
+- Notes: the DB has no `username` column, so profiles show name, email, status and member-since instead. Managers can open profiles of developers only.
+
 ## Auth pages
 - Signup: `POST /api/v1/auth/signup` {email, full_name, password}; role is always DEVELOPER (server-side), returns tokens. Frontend `/signup` + redesigned `/login` share `components/AuthShell.tsx`. 40 backend tests pass.
 - Next idea: SSO via OAuth2/OIDC (Google/GitHub), see chat notes.

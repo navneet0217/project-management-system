@@ -18,11 +18,12 @@ if that fails, log out.
 ## Users (ADMIN only unless noted)
 | Method | Path | Notes |
 |---|---|---|
-| GET | /users | query: search, role, is_active, page, size |
+| GET | /users | query: search, role, is_active, sort_by (full_name, email, role, is_active, created_at), order, page, size. Each user includes `projects` (current, not completed: as member or manager) |
 | POST | /users | `{email, full_name, password, role}` |
 | GET | /users/{id} | |
 | PATCH | /users/{id} | `{full_name?, role?, is_active?, password?}` (admin cannot deactivate/demote self) |
 | GET | /users/options | ADMIN + MANAGER. Dropdown list of active users, query: role |
+| GET | /users/{id}/profile | ADMIN (anyone), MANAGER (developers only). `{user, managers, current_projects, past_projects, tasks, activity}`. Past = completed projects + projects the user was removed from |
 
 ## Projects
 | Method | Path | Who | Notes |
@@ -32,6 +33,7 @@ if that fails, log out.
 | GET | /projects/{id} | members/manager/admin | includes member_count, total_tasks, done_tasks, completion_percentage |
 | PATCH | /projects/{id} | project manager, admin | only admin may change manager_id |
 | DELETE | /projects/{id} | project manager, admin | 409 if open tasks exist |
+| GET | /projects/{id}/activities | anyone who can see the project | audit timeline, newest first. query: category (tasks, members, project, comments), page, size. Each entry: actor, action, entity_label, field, old_value, new_value, comment, created_at |
 | GET | /projects/{id}/members | anyone who can see the project | |
 | POST | /projects/{id}/members | project manager, admin | `{user_id}` (developers only) |
 | DELETE | /projects/{id}/members/{user_id} | project manager, admin | unassigns their tasks |
@@ -40,12 +42,13 @@ if that fails, log out.
 | Method | Path | Who | Notes |
 |---|---|---|---|
 | GET | /projects/{id}/tasks | anyone who can see the project | query: status, priority, assignee_id, search, sort_by (created_at, deadline, priority, status, title), order, page, size (default 50, max 200) |
-| POST | /projects/{id}/tasks | project manager, admin | `{title, description?, priority?, deadline?, assignee_id?}` |
+| POST | /projects/{id}/tasks | project manager, admin; **developers** for themselves | `{title, description?, priority?, deadline?, assignee_id?}`. A developer (member of the project) always gets assignee = self; assigning someone else is 403 |
+| GET | /tasks | any | every task the caller can see (admin: all, manager: own projects, developer: assigned). query: status, priority, search, sort_by, order, page, size (default 10). Each task includes `project_name`. |
 | GET | /tasks/my | any | tasks assigned to me |
 | GET | /tasks/{id} | anyone who can see the project | |
-| PATCH | /tasks/{id} | project manager, admin | send only fields to change; `assignee_id: null` unassigns |
+| PATCH | /tasks/{id} | project manager, admin; the task's assignee | send only fields to change; `assignee_id: null` unassigns. The assignee (developer) may change title, description, priority, deadline but not the assignee |
 | PATCH | /tasks/{id}/status | assignee, project manager, admin | `{status}`. **Kanban uses this one.** |
-| DELETE | /tasks/{id} | project manager, admin | |
+| DELETE | /tasks/{id} | project manager, admin; a developer only for tasks assigned to them that they created | **body `{reason}` is mandatory** (min 3 chars, else 422); the reason is saved in the project activity |
 | GET/POST | /tasks/{id}/comments | anyone who can see the project | POST `{body}` |
 | GET | /tasks/{id}/activities | anyone who can see the project | newest first. type: CREATED, STATUS_CHANGED, ASSIGNEE_CHANGED |
 
@@ -63,3 +66,9 @@ GET /health -> `{"status":"ok"}` (checks the database)
 
 ## Demo logins (after `python -m app.seed`, password `Demo@12345`)
 admin@demo.dev | meera.manager@demo.dev | rohan.manager@demo.dev | dev.isha@demo.dev (also dev.kabir, dev.neha, dev.arjun @demo.dev)
+
+## Project activity (audit log)
+Stored in table `project_activities` (Alembic 0002). Written by `audit_service.record()` in the same transaction as the change.
+Actions: PROJECT_UPDATED, TASK_CREATED, TASK_UPDATED, TASK_DELETED, TASK_ASSIGNED, TASK_REASSIGNED, TASK_STATUS_CHANGED,
+TASK_PRIORITY_CHANGED, COMMENT_ADDED, MEMBER_ADDED, MEMBER_REMOVED. Entities: PROJECT, TASK, MEMBER, COMMENT.
+Timestamps are UTC without a timezone suffix; the frontend (`lib/dates.ts`) adds the `Z`.

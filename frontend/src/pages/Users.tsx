@@ -1,45 +1,70 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Select, Space, Switch, Table, Typography, message } from 'antd'
+import { App, Button, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd'
+import { EyeOutlined, PlusOutlined } from '@ant-design/icons'
+import { Link } from 'react-router-dom'
 import SearchInput from '../components/SearchInput'
-import { PlusOutlined } from '@ant-design/icons'
-import { usersApi, type UserCreatePayload, type UserUpdatePayload } from '../api/users'
+import UserProfileModal from '../components/UserProfileModal'
+import {
+  usersApi,
+  type UserCreatePayload,
+  type UserSortField,
+  type UserUpdatePayload,
+} from '../api/users'
+import { useSort } from '../hooks/useSort'
+import { formatDate } from '../lib/dates'
 import { useAppSelector } from '../store'
 import { PageHeaderRow } from '../components/PageHeaderRow'
 import { StatusTag } from '../components/StatusTag'
 import { ROLES, toOptions } from '../lib/options'
-import type { Page, Role, User } from '../types'
+import type { Page, ProjectRef, Role, UserListItem } from '../types'
 
 const PASSWORD_RULE = {
   min: 8,
   message: 'At least 8 characters',
 }
 
+const SORT_FIELDS: readonly UserSortField[] = ['full_name', 'email', 'role', 'is_active', 'created_at']
+const DEFAULT_SORT = { field: 'created_at', order: 'desc' } as const
+
 export default function Users() {
+  const { message, modal } = App.useApp()
   const me = useAppSelector((s) => s.auth.user)!
-  const [data, setData] = useState<Page<User> | null>(null)
+  const { sort, sortProps, onTableChange } = useSort<UserSortField>(SORT_FIELDS, DEFAULT_SORT)
+  const [data, setData] = useState<Page<UserListItem> | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<Role | undefined>()
   const [page, setPage] = useState(1)
-  const [editing, setEditing] = useState<User | 'new' | null>(null)
+  const [editing, setEditing] = useState<UserListItem | 'new' | null>(null)
   const [saving, setSaving] = useState(false)
+  const [profileId, setProfileId] = useState<number | null>(null)
+  const [togglingId, setTogglingId] = useState<number | null>(null)
   const [form] = Form.useForm()
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setData(await usersApi.list({ search: search || undefined, role, page, size: 10 }))
+      setData(
+        await usersApi.list({
+          search: search || undefined,
+          role,
+          sort_by: sort.field,
+          order: sort.order,
+          page,
+          size: 10,
+        }),
+      )
     } finally {
       setLoading(false)
     }
-  }, [search, role, page])
+  }, [search, role, sort, page])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load])
 
-  const openModal = (u: User | 'new') => {
+  const openModal = (u: UserListItem | 'new') => {
     form.resetFields()
     if (u !== 'new') form.setFieldsValue(u)
     setEditing(u)
@@ -64,6 +89,31 @@ export default function Users() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const setActive = async (u: UserListItem, active: boolean) => {
+    setTogglingId(u.id)
+    try {
+      await usersApi.update(u.id, { is_active: active })
+      message.success(`${u.full_name} is now ${active ? 'active' : 'inactive'}`)
+      load()
+    } catch {
+      // the axios interceptor already showed the error
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
+  const toggle = (u: UserListItem, active: boolean) => {
+    if (active) return setActive(u, true)
+    modal.confirm({
+      title: `Deactivate ${u.full_name}?`,
+      content: 'They will be signed out and will not be able to log in until you activate them again.',
+      okText: 'Deactivate',
+      okButtonProps: { danger: true },
+      centered: true,
+      onOk: () => setActive(u, false),
+    })
   }
 
   return (
@@ -96,38 +146,76 @@ export default function Users() {
           style={{ width: 160 }}
         />
       </Space>
-      <Table<User>
+      <Table<UserListItem>
         rowKey="id"
         loading={loading}
         dataSource={data?.items}
         scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page,
-          pageSize: 10,
-          total: data?.total ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
+        showSorterTooltip={false}
+        pagination={{ current: page, pageSize: 10, total: data?.total ?? 0, showSizeChanger: false }}
+        onChange={(pagination, _filters, sorter) => {
+          onTableChange(sorter as never)
+          setPage(pagination.current ?? 1)
         }}
         columns={[
-          { title: 'Name', dataIndex: 'full_name' },
-          { title: 'Email', dataIndex: 'email' },
-          { title: 'Role', dataIndex: 'role', render: (r: Role) => <StatusTag value={r} /> },
+          { title: 'Name', dataIndex: 'full_name', ...sortProps('full_name') },
+          { title: 'Email', dataIndex: 'email', ...sortProps('email') },
           {
-            title: 'Active',
+            title: 'Role',
+            dataIndex: 'role',
+            ...sortProps('role'),
+            render: (r: Role) => <StatusTag value={r} />,
+          },
+          {
+            title: 'Status',
             dataIndex: 'is_active',
-            render: (v: boolean) => (v ? 'Yes' : 'No'),
+            ...sortProps('is_active'),
+            render: (v: boolean) => <Tag color={v ? 'success' : 'default'}>{v ? 'Active' : 'Inactive'}</Tag>,
+          },
+          {
+            title: 'Projects',
+            dataIndex: 'projects',
+            render: (projects: ProjectRef[]) =>
+              projects.length ? (
+                <div className="chip-row">
+                  {projects.map((p) => (
+                    <Tag key={p.id} color="teal">
+                      <Link to={`/projects/${p.id}`}>{p.name}</Link>
+                    </Tag>
+                  ))}
+                </div>
+              ) : (
+                <Typography.Text type="secondary">-</Typography.Text>
+              ),
           },
           {
             title: 'Created',
             dataIndex: 'created_at',
-            render: (v: string) => new Date(v).toLocaleDateString(),
+            ...sortProps('created_at'),
+            render: (v: string) => formatDate(v),
           },
           {
-            title: '',
+            title: 'Actions',
+            key: 'actions',
             render: (_, u) => (
-              <Button size="small" onClick={() => openModal(u)}>
-                Edit
-              </Button>
+              <Space size="small" wrap>
+                <Button size="small" onClick={() => openModal(u)}>
+                  Edit
+                </Button>
+                <Switch
+                  size="small"
+                  checked={u.is_active}
+                  loading={togglingId === u.id}
+                  disabled={u.id === me.id}
+                  checkedChildren="Active"
+                  unCheckedChildren="Inactive"
+                  onChange={(checked) => toggle(u, checked)}
+                  title={u.id === me.id ? 'You cannot deactivate your own account' : undefined}
+                />
+                <Button size="small" icon={<EyeOutlined />} onClick={() => setProfileId(u.id)}>
+                  View profile
+                </Button>
+              </Space>
             ),
           },
         ]}
@@ -139,14 +227,10 @@ export default function Users() {
         onCancel={() => setEditing(null)}
         onOk={() => form.submit()}
         confirmLoading={saving}
+        centered
         destroyOnHidden
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={submit}
-          initialValues={{ role: 'DEVELOPER', is_active: true }}
-        >
+        <Form form={form} layout="vertical" onFinish={submit} initialValues={{ role: 'DEVELOPER' }}>
           {editing === 'new' && (
             <Form.Item
               name="email"
@@ -156,11 +240,7 @@ export default function Users() {
               <Input />
             </Form.Item>
           )}
-          <Form.Item
-            name="full_name"
-            label="Full name"
-            rules={[{ required: true, min: 2, max: 120 }]}
-          >
+          <Form.Item name="full_name" label="Full name" rules={[{ required: true, min: 2, max: 120 }]}>
             <Input />
           </Form.Item>
           <Form.Item name="role" label="Role" rules={[{ required: true }]}>
@@ -169,11 +249,6 @@ export default function Users() {
               disabled={editing !== 'new' && editing?.id === me.id}
             />
           </Form.Item>
-          {editing !== 'new' && (
-            <Form.Item name="is_active" label="Active" valuePropName="checked">
-              <Switch disabled={editing?.id === me.id} />
-            </Form.Item>
-          )}
           <Form.Item
             name="password"
             label={editing === 'new' ? 'Password' : 'New password (optional)'}
@@ -184,8 +259,11 @@ export default function Users() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <UserProfileModal userId={profileId} onClose={() => setProfileId(null)} />
+
       <Typography.Text type="secondary">
-        You cannot deactivate or demote your own account.
+        You cannot deactivate or demote your own account. Project allocation is managed on each project's members list.
       </Typography.Text>
     </>
   )

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.models import Role
+from app.models import ProjectStatus, Role
 
 
 def _check_password(value: str) -> str:
@@ -50,6 +50,20 @@ class UserOut(UserOption):
     email: str
     is_active: bool
     created_at: datetime
+
+
+class ProjectRef(BaseModel):
+    """A project reference for the Users table (current allocation)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    status: ProjectStatus
+
+
+class UserListItem(UserOut):
+    projects: list[ProjectRef] = []
 
 
 class UserCreate(BaseModel):

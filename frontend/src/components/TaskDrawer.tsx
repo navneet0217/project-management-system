@@ -5,6 +5,7 @@ import { useFetch } from '../hooks/useFetch'
 import QueryState from './QueryState'
 import { StatusTag } from './StatusTag'
 import { label } from '../lib/options'
+import { formatDateTime } from '../lib/dates'
 import type { Task, TaskActivity } from '../types'
 
 const describe = (a: TaskActivity) => {
@@ -44,7 +45,7 @@ function Comments({ taskId }: { taskId: number }) {
         renderItem={(c) => (
           <List.Item>
             <List.Item.Meta
-              title={`${c.user?.full_name ?? 'Unknown'} · ${new Date(c.created_at).toLocaleString()}`}
+              title={`${c.user?.full_name ?? 'Unknown'} · ${formatDateTime(c.created_at)}`}
               description={<span style={{ whiteSpace: 'pre-wrap' }}>{c.body}</span>}
             />
           </List.Item>
@@ -76,7 +77,7 @@ function Activity({ taskId }: { taskId: number }) {
             <>
               <div>{describe(a)}</div>
               <Typography.Text type="secondary">
-                {new Date(a.created_at).toLocaleString()}
+                {formatDateTime(a.created_at)}
               </Typography.Text>
             </>
           ),

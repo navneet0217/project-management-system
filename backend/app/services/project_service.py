@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.exceptions import BadRequest, Conflict, Forbidden, NotFound
 from app.models import (
     ActivityType,
+    AuditAction,
+    AuditEntity,
     Project,
     ProjectMember,
     ProjectStatus,
@@ -16,6 +18,7 @@ from app.models import (
 )
 from app.schemas.project import ProjectCreate, ProjectOut, ProjectUpdate
 from app.schemas.user import UserOption
+from app.services import audit_service
 
 
 def _scope(user: User):
@@ -167,6 +170,24 @@ def update_project(db: Session, user: User, project_id: int, data: ProjectUpdate
     for field, value in changes.items():
         if field in ("name", "status") and value is None:
             continue
+        old = getattr(project, field)
+        if old == value:
+            continue
+        if field == "manager_id":  # log the manager's name, not the raw id
+            old_user = db.get(User, old) if old else None
+            new_user = db.get(User, value) if value else None
+            old, new = (old_user.full_name if old_user else None), (new_user.full_name if new_user else None)
+            audit_service.record(
+                db, project_id=project.id, actor=user, action=AuditAction.PROJECT_UPDATED,
+                entity_type=AuditEntity.PROJECT, entity_id=project.id, entity_label=project.name,
+                field="manager", old=old, new=new,
+            )
+        else:
+            audit_service.record(
+                db, project_id=project.id, actor=user, action=AuditAction.PROJECT_UPDATED,
+                entity_type=AuditEntity.PROJECT, entity_id=project.id, entity_label=project.name,
+                field=field, old=old, new=value,
+            )
         setattr(project, field, value)
     db.commit()
     return get_viewable(db, user, project_id)
@@ -198,13 +219,19 @@ def list_members(db: Session, user: User, project_id: int) -> list[UserOption]:
 def add_member(db: Session, user: User, project_id: int, member_id: int) -> list[UserOption]:
     project = get_manageable(db, user, project_id)
     member = db.get(User, member_id)
-    if not member or not member.is_active:
+    if not member:
         raise NotFound("User not found")
+    if not member.is_active:
+        raise BadRequest("Inactive users cannot be added to a project")
     if member.role != Role.DEVELOPER:
         raise BadRequest("Only developers can be added as project members")
     if db.get(ProjectMember, (project.id, member.id)):
         raise Conflict("User is already a member of this project")
     db.add(ProjectMember(project_id=project.id, user_id=member.id))
+    audit_service.record(
+        db, project_id=project.id, actor=user, action=AuditAction.MEMBER_ADDED, entity_type=AuditEntity.MEMBER,
+        entity_id=member.id, entity_label=member.full_name, target_user_id=member.id,
+    )
     db.commit()
     return list_members(db, user, project_id)
 
@@ -217,6 +244,7 @@ def remove_member(db: Session, user: User, project_id: int, member_id: int) -> N
     # Their tasks in this project become unassigned (and the change is recorded in the timeline).
     tasks = db.scalars(select(Task).where(Task.project_id == project.id, Task.assignee_id == member_id)).all()
     removed = db.get(User, member_id)
+    removed_name = removed.full_name if removed else str(member_id)
     for task in tasks:
         task.assignee_id = None
         db.add(
@@ -224,10 +252,19 @@ def remove_member(db: Session, user: User, project_id: int, member_id: int) -> N
                 task_id=task.id,
                 user_id=user.id,
                 type=ActivityType.ASSIGNEE_CHANGED,
-                old_value=removed.full_name if removed else str(member_id),
+                old_value=removed_name,
                 new_value=None,
             )
         )
+        audit_service.record(
+            db, project_id=project.id, actor=user, action=AuditAction.TASK_REASSIGNED, entity_type=AuditEntity.TASK,
+            entity_id=task.id, entity_label=task.title, field="assignee", old=removed_name, new=None,
+            comment="Unassigned because the member was removed from the project",
+        )
+    audit_service.record(
+        db, project_id=project.id, actor=user, action=AuditAction.MEMBER_REMOVED, entity_type=AuditEntity.MEMBER,
+        entity_id=member_id, entity_label=removed_name, target_user_id=member_id,
+    )
     db.delete(link)
     db.commit()
 

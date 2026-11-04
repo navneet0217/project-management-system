@@ -21,6 +21,8 @@ export interface TaskListParams {
 }
 
 export const tasksApi = {
+  list: (params: TaskListParams) =>
+    api.get<Page<Task>>('/tasks', { params }).then((r) => r.data),
   listByProject: (projectId: number, params: TaskListParams) =>
     api.get<Page<Task>>(`/projects/${projectId}/tasks`, { params }).then((r) => r.data),
   create: (projectId: number, data: TaskPayload) =>
@@ -31,7 +33,7 @@ export const tasksApi = {
     api.patch<Task>(`/tasks/${id}`, data).then((r) => r.data),
   updateStatus: (id: number, status: TaskStatus) =>
     api.patch<Task>(`/tasks/${id}/status`, { status }).then((r) => r.data),
-  remove: (id: number) => api.delete(`/tasks/${id}`),
+  remove: (id: number, reason: string) => api.delete(`/tasks/${id}`, { data: { reason } }),
   comments: (id: number) =>
     api.get<TaskComment[]>(`/tasks/${id}/comments`).then((r) => r.data),
   addComment: (id: number, body: string) =>

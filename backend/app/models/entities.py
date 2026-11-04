@@ -53,6 +53,29 @@ class ActivityType(str, enum.Enum):
     ASSIGNEE_CHANGED = "ASSIGNEE_CHANGED"
 
 
+class AuditAction(str, enum.Enum):
+    """What happened, for the project-level audit log."""
+
+    PROJECT_UPDATED = "PROJECT_UPDATED"
+    TASK_CREATED = "TASK_CREATED"
+    TASK_UPDATED = "TASK_UPDATED"
+    TASK_DELETED = "TASK_DELETED"
+    TASK_ASSIGNED = "TASK_ASSIGNED"
+    TASK_REASSIGNED = "TASK_REASSIGNED"
+    TASK_STATUS_CHANGED = "TASK_STATUS_CHANGED"
+    TASK_PRIORITY_CHANGED = "TASK_PRIORITY_CHANGED"
+    COMMENT_ADDED = "COMMENT_ADDED"
+    MEMBER_ADDED = "MEMBER_ADDED"
+    MEMBER_REMOVED = "MEMBER_REMOVED"
+
+
+class AuditEntity(str, enum.Enum):
+    PROJECT = "PROJECT"
+    TASK = "TASK"
+    MEMBER = "MEMBER"
+    COMMENT = "COMMENT"
+
+
 def _enum(e: type[enum.Enum]) -> Enum:
     # Stored as VARCHAR (not a native DB enum) so adding a value later is a simple migration.
     return Enum(e, native_enum=False, length=20)
@@ -146,6 +169,10 @@ class Task(Base):
         back_populates="task", cascade="all, delete-orphan"
     )
 
+    @property
+    def project_name(self) -> str | None:
+        return self.project.name if self.project else None
+
 
 class TaskComment(Base):
     __tablename__ = "task_comments"
@@ -177,6 +204,37 @@ class TaskActivity(Base):
 
     task: Mapped[Task] = relationship(back_populates="activities")
     user: Mapped[User | None] = relationship()
+
+
+class ProjectActivity(Base):
+    """Append-only audit log. entity_id/entity_label are plain values (no FK) so history survives deletions."""
+
+    __tablename__ = "project_activities"
+    __table_args__ = (Index("ix_project_activities_project_created", "project_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    action: Mapped[AuditAction] = mapped_column(Enum(AuditAction, native_enum=False, length=40))
+    entity_type: Mapped[AuditEntity] = mapped_column(Enum(AuditEntity, native_enum=False, length=20))
+    entity_id: Mapped[int | None] = mapped_column()
+    entity_label: Mapped[str | None] = mapped_column(String(200))
+    target_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    field: Mapped[str | None] = mapped_column(String(40))
+    old_value: Mapped[str | None] = mapped_column(Text)
+    new_value: Mapped[str | None] = mapped_column(Text)
+    comment: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP")
+    )
+
+    project: Mapped[Project] = relationship()
+    actor: Mapped[User | None] = relationship(foreign_keys=[actor_id])
+    target_user: Mapped[User | None] = relationship(foreign_keys=[target_user_id])
+
+    @property
+    def project_name(self) -> str | None:
+        return self.project.name if self.project else None
 
 
 class RefreshToken(Base):

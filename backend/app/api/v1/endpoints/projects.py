@@ -1,13 +1,16 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_roles
 from app.db.session import get_db
 from app.models import ProjectStatus, Role, User
+from app.schemas.audit import ProjectActivityOut
 from app.schemas.common import Page
 from app.schemas.project import MemberAdd, ProjectCreate, ProjectOut, ProjectUpdate
 from app.schemas.user import UserOption
-from app.services import project_service
+from app.services import audit_service, project_service
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -60,6 +63,23 @@ def delete_project(
 ):
     project_service.delete_project(db, user, project_id)
     return Response(status_code=204)
+
+
+@router.get("/{project_id}/activities", response_model=Page[ProjectActivityOut])
+def project_activities(
+    project_id: int,
+    category: Literal["tasks", "members", "project", "comments"] | None = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Audit timeline for a project, newest first. Visible to everyone who can see the project."""
+    project = project_service.get_viewable(db, user, project_id)
+    rows, total = audit_service.list_for_project(db, project, category=category, page=page, size=size)
+    return Page[ProjectActivityOut](
+        items=[ProjectActivityOut.model_validate(r) for r in rows], total=total, page=page, size=size
+    )
 
 
 @router.get("/{project_id}/members", response_model=list[UserOption])

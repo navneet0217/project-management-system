@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from app.models import ActivityType, Priority, TaskStatus
 from app.schemas.user import UserOption
@@ -30,11 +30,26 @@ class TaskStatusUpdate(BaseModel):
     status: TaskStatus
 
 
+class TaskDelete(BaseModel):
+    """Deleting a task needs a reason; it is stored in the project's activity log."""
+
+    reason: str = Field(min_length=3, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def _not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 3:
+            raise ValueError("A reason of at least 3 characters is required")
+        return value
+
+
 class TaskOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     project_id: int
+    project_name: str | None = None
     title: str
     description: str | None
     status: TaskStatus

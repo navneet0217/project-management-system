@@ -56,6 +56,7 @@ export interface ProjectPayload {
 export interface Task {
   id: number
   project_id: number
+  project_name?: string | null
   title: string
   description: string | null
   status: TaskStatus
@@ -119,4 +120,60 @@ export interface Dashboard {
   tasks_by_priority: Record<string, number>
   projects: ProjectProgress[]
   upcoming_deadlines: DeadlineItem[]
+}
+
+export interface ProjectRef {
+  id: number
+  name: string
+  status: ProjectStatus
+}
+
+export interface UserListItem extends User {
+  projects: ProjectRef[]
+}
+
+export interface ProfileProject extends ProjectRef {
+  relation: 'Member' | 'Manager' | 'Removed'
+}
+
+export type AuditAction =
+  | 'PROJECT_UPDATED'
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'TASK_DELETED'
+  | 'TASK_ASSIGNED'
+  | 'TASK_REASSIGNED'
+  | 'TASK_STATUS_CHANGED'
+  | 'TASK_PRIORITY_CHANGED'
+  | 'COMMENT_ADDED'
+  | 'MEMBER_ADDED'
+  | 'MEMBER_REMOVED'
+
+export type AuditEntity = 'PROJECT' | 'TASK' | 'MEMBER' | 'COMMENT'
+export type ActivityCategory = 'tasks' | 'members' | 'project' | 'comments'
+
+export interface ProjectActivity {
+  id: number
+  project_id: number
+  project_name: string | null
+  action: AuditAction
+  entity_type: AuditEntity
+  entity_id: number | null
+  entity_label: string | null
+  field: string | null
+  old_value: string | null
+  new_value: string | null
+  comment: string | null
+  created_at: string
+  actor: UserOption | null
+  target_user: UserOption | null
+}
+
+export interface UserProfile {
+  user: User
+  managers: UserOption[]
+  current_projects: ProfileProject[]
+  past_projects: ProfileProject[]
+  tasks: Task[]
+  activity: ProjectActivity[]
 }

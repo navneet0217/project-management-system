@@ -3,15 +3,16 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_roles
+from app.api.deps import get_current_user
 from app.db.session import get_db
-from app.models import Priority, Role, TaskStatus, User
+from app.models import Priority, TaskStatus, User
 from app.schemas.common import Page
 from app.schemas.task import (
     ActivityOut,
     CommentCreate,
     CommentOut,
     TaskCreate,
+    TaskDelete,
     TaskOut,
     TaskStatusUpdate,
     TaskUpdate,
@@ -47,14 +48,34 @@ def create_task(
     project_id: int,
     data: TaskCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_roles(Role.ADMIN, Role.MANAGER)),
+    user: User = Depends(get_current_user),  # developers may create tasks for themselves; the service enforces it
 ):
     return task_service.create_task(db, user, project_id, data)
+
+
+@router.get("/tasks", response_model=Page[TaskOut])
+def list_visible_tasks(
+    status: TaskStatus | None = None,
+    priority: Priority | None = None,
+    search: str | None = Query(None, max_length=100),
+    sort_by: str = "created_at",
+    order: Literal["asc", "desc"] = "desc",
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Every task the caller can see (admin: all, manager: own projects, developer: assigned)."""
+    items, total = task_service.visible_tasks(
+        db, user, status=status, priority=priority, search=search, sort_by=sort_by, order=order, page=page, size=size
+    )
+    return Page[TaskOut](items=items, total=total, page=page, size=size)
 
 
 @router.get("/tasks/my", response_model=Page[TaskOut])
 def my_tasks(
     status: TaskStatus | None = None,
+    priority: Priority | None = None,
     search: str | None = Query(None, max_length=100),
     sort_by: str = "deadline",
     order: Literal["asc", "desc"] = "asc",
@@ -63,7 +84,7 @@ def my_tasks(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    items, total = task_service.my_tasks(db, user, status, search, sort_by, order, page, size)
+    items, total = task_service.my_tasks(db, user, status, priority, search, sort_by, order, page, size)
     return Page[TaskOut](items=items, total=total, page=page, size=size)
 
 
@@ -89,8 +110,13 @@ def update_task_status(
 
 
 @router.delete("/tasks/{task_id}", status_code=204)
-def delete_task(task_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    task_service.delete_task(db, user, task_id)
+def delete_task(
+    task_id: int,
+    data: TaskDelete,  # a reason is mandatory (422 if missing/blank) and is saved in the project activity log
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    task_service.delete_task(db, user, task_id, data.reason)
     return Response(status_code=204)
 
 

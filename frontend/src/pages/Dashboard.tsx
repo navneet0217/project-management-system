@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
-import { Card, Col, Empty, List, Progress, Row, Skeleton, Tag, Typography, theme } from 'antd'
+import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Button, Card, Col, Empty, List, Progress, Row, Skeleton, Typography, theme } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -26,9 +27,12 @@ import {
   YAxis,
 } from 'recharts'
 import { dashboardApi } from '../api/dashboard'
+import { projectsApi } from '../api/projects'
+import { tasksApi } from '../api/tasks'
 import { useFetch } from '../hooks/useFetch'
 import { useAppSelector } from '../store'
 import KpiCard from '../components/KpiCard'
+import RecentModal from '../components/RecentModal'
 import { KPI_DANGER, KPI_THEMES } from '../lib/kpiThemes'
 import { BRAND, BRAND_LIGHT } from '../lib/brand'
 import QueryState from '../components/QueryState'
@@ -52,6 +56,10 @@ const KPI_ICONS: Record<string, React.ReactNode> = {
 
 const fetcher = () => dashboardApi.get()
 const HIDDEN_KPIS = new Set(['completed_projects'])
+const PROJECT_KPIS = new Set(['total_projects', 'managed_projects'])
+const loadRecentProjects = () => projectsApi.list({ size: 5 }).then((p) => p.items) // API returns newest first
+const loadRecentTasks = () =>
+  tasksApi.list({ sort_by: 'created_at', order: 'desc', size: 5 }).then((p) => p.items)
 
 const greeting = () => {
   const h = new Date().getHours()
@@ -60,7 +68,22 @@ const greeting = () => {
 
 export default function Dashboard() {
   const user = useAppSelector((s) => s.auth.user)!
+  const navigate = useNavigate()
   const { token } = theme.useToken()
+  const [recent, setRecent] = useState<'projects' | 'tasks' | null>(null)
+  // Developers only see their own tasks, so "View all" takes them to My tasks
+  const tasksPath = user.role === 'DEVELOPER' ? '/my-tasks' : '/tasks'
+  const viewAll = (path: string) => (
+    <Button type="link" size="small" onClick={() => navigate(path)}>
+      View all
+    </Button>
+  )
+  const kpiAction = (key: string) =>
+    PROJECT_KPIS.has(key) ? () => setRecent('projects') : key === 'total_tasks' ? () => setRecent('tasks') : undefined
+  const closeAndGo = (path: string) => {
+    setRecent(null)
+    navigate(path)
+  }
   const tooltipStyle = {
     contentStyle: {
       background: token.colorBgElevated,
@@ -90,12 +113,9 @@ export default function Dashboard() {
   return (
     <QueryState loading={false} error={error} onRetry={reload}>
       <div className="page-head">
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {greeting()}, {user.full_name.split(' ')[0]}
-          </Typography.Title>
-        </div>
-        <Tag color="blue">{label(user.role)}</Tag>
+        <Typography.Title level={3} style={{ margin: 0 }}>
+          {greeting()}, {user.full_name.split(' ')[0]}
+        </Typography.Title>
       </div>
 
       {loading && !data ? (
@@ -116,13 +136,14 @@ export default function Dashboard() {
                 value={v}
                 icon={KPI_ICONS[k] ?? <UnorderedListOutlined />}
                 theme={k === 'overdue_tasks' ? KPI_DANGER : KPI_THEMES[i % 4]}
+                onClick={kpiAction(k)}
               />
             ))}
           </div>
 
           <Row gutter={[20, 20]} style={{ marginTop: 20 }}>
             <Col xs={24} lg={12}>
-              <Card title="Tasks by status" className="soft-card">
+              <Card title="Tasks by status" className="soft-card" extra={viewAll(tasksPath)}>
                 {hasTasks ? (
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
@@ -155,7 +176,11 @@ export default function Dashboard() {
               </Card>
             </Col>
             <Col xs={24} lg={12}>
-              <Card title="Tasks by priority" className="soft-card">
+              <Card
+                title="Tasks by priority"
+                className="soft-card"
+                extra={viewAll(`${tasksPath}?sort_by=priority&order=desc`)}
+              >
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={priorityData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.4} />
@@ -175,7 +200,7 @@ export default function Dashboard() {
 
           <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
             <Col xs={24} lg={12}>
-              <Card title="Project progress" className="soft-card">
+              <Card title="Project progress" className="soft-card" extra={viewAll('/projects')}>
                 <List
                   dataSource={data?.projects ?? []}
                   locale={{ emptyText: <Empty description="No projects yet" /> }}
@@ -194,7 +219,11 @@ export default function Dashboard() {
               </Card>
             </Col>
             <Col xs={24} lg={12}>
-              <Card title="Upcoming deadlines" className="soft-card">
+              <Card
+                title="Upcoming deadlines"
+                className="soft-card"
+                extra={viewAll(`${tasksPath}?sort_by=deadline&order=asc`)}
+              >
                 <List
                   dataSource={data?.upcoming_deadlines ?? []}
                   locale={{ emptyText: <Empty description="No upcoming deadlines" /> }}
@@ -212,6 +241,47 @@ export default function Dashboard() {
           </Row>
         </>
       )}
+
+      <RecentModal
+        open={recent === 'projects'}
+        title="Recent projects"
+        emptyText="No projects yet"
+        onClose={() => setRecent(null)}
+        onViewAll={() => closeAndGo('/projects')}
+        load={loadRecentProjects}
+        renderItem={(p) => (
+          <button type="button" className="recent-item" onClick={() => closeAndGo(`/projects/${p.id}`)}>
+            <div className="recent-item-main">
+              <span className="recent-item-title">{p.name}</span>
+              <StatusTag value={p.status} />
+            </div>
+            <div className="recent-item-sub">
+              {p.manager?.full_name ?? 'No manager'} · created {new Date(p.created_at).toLocaleDateString()}
+            </div>
+          </button>
+        )}
+      />
+      <RecentModal
+        open={recent === 'tasks'}
+        title="Recent tasks"
+        emptyText="No tasks yet"
+        onClose={() => setRecent(null)}
+        onViewAll={() => closeAndGo(tasksPath)}
+        load={loadRecentTasks}
+        renderItem={(t) => (
+          <button type="button" className="recent-item" onClick={() => closeAndGo(`/projects/${t.project_id}`)}>
+            <div className="recent-item-main">
+              <span className="recent-item-title">{t.title}</span>
+              <span>
+                <StatusTag value={t.priority} /> <StatusTag value={t.status} />
+              </span>
+            </div>
+            <div className="recent-item-sub">
+              {t.project_name ?? 'Project'} · created {new Date(t.created_at).toLocaleDateString()}
+            </div>
+          </button>
+        )}
+      />
     </QueryState>
   )
 }

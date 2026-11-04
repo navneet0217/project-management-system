@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Popconfirm, Select, Space, Table, Tag } from 'antd'
+import { Button, Select, Space, Table, Tag } from 'antd'
 import SearchInput from '../SearchInput'
+import DeleteTaskModal from '../DeleteTaskModal'
 import { DeleteOutlined } from '@ant-design/icons'
 import { tasksApi, type TaskListParams } from '../../api/tasks'
 import TaskStatusSelect from '../TaskStatusSelect'
@@ -31,6 +32,7 @@ export default function TaskListTab({
   const [status, setStatus] = useState<TaskStatus | undefined>()
   const [priority, setPriority] = useState<Priority | undefined>()
   const [page, setPage] = useState(1)
+  const [deleting, setDeleting] = useState<Task | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -54,15 +56,6 @@ export default function TaskListTab({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load, refreshKey])
-
-  const remove = async (id: number) => {
-    try {
-      await tasksApi.remove(id)
-      onChanged()
-    } catch {
-      // error toast comes from the axios interceptor
-    }
-  }
 
   return (
     <>
@@ -149,14 +142,13 @@ export default function TaskListTab({
                   <Button size="small" onClick={() => onEdit(t)}>
                     Edit
                   </Button>
-                  <Popconfirm title="Delete task?" onConfirm={() => remove(t.id)}>
-                    <Button size="small" danger icon={<DeleteOutlined />} />
-                  </Popconfirm>
+                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => setDeleting(t)} />
                 </Space>
               ),
           },
         ]}
       />
+      <DeleteTaskModal task={deleting} onClose={() => setDeleting(null)} onDeleted={onChanged} />
     </>
   )
 }

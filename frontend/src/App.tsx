@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Projects = lazy(() => import('./pages/Projects'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const MyTasks = lazy(() => import('./pages/MyTasks'))
+const Tasks = lazy(() => import('./pages/Tasks'))
 const Users = lazy(() => import('./pages/Users'))
 
 function ThemedBody({ dark }: { dark: boolean }) {
@@ -84,6 +85,9 @@ export default function App() {
                   <Route path="projects" element={<Projects />} />
                   <Route path="projects/:id" element={<ProjectDetail />} />
                   <Route path="my-tasks" element={<MyTasks />} />
+                  <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']} />}>
+                    <Route path="tasks" element={<Tasks />} />
+                  </Route>
                   <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                     <Route path="users" element={<Users />} />
                   </Route>

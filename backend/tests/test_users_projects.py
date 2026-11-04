@@ -112,3 +112,66 @@ def test_project_search_respects_visibility(client, world):
     assert _search(client, world.m1, "project") == {"Project One"}
     # dev1 is a member of p1 only
     assert _search(client, world.dev1, "project") == {"Project One"}
+
+
+def test_users_list_sorting(client, world):
+    def names(**params):
+        res = client.get("/api/v1/users", params=params, headers=auth(world.admin))
+        assert res.status_code == 200
+        return [u["full_name"] for u in res.json()["items"]]
+
+    asc = names(sort_by="full_name", order="asc")
+    assert asc == sorted(asc, key=str.lower) or asc == sorted(asc)
+    assert names(sort_by="full_name", order="desc") == list(reversed(asc))
+    roles = [u["role"] for u in client.get("/api/v1/users", params={"sort_by": "role", "order": "asc"}, headers=auth(world.admin)).json()["items"]]
+    assert roles == sorted(roles)
+    assert client.get("/api/v1/users", params={"sort_by": "password"}, headers=auth(world.admin)).status_code == 400
+
+
+def test_users_list_includes_current_projects(client, world):
+    items = client.get("/api/v1/users", headers=auth(world.admin)).json()["items"]
+    by_email = {u["email"]: u for u in items}
+    assert [p["name"] for p in by_email["dev1@test.dev"]["projects"]] == ["Project One"]  # as a member
+    assert [p["name"] for p in by_email["m1@test.dev"]["projects"]] == ["Project One"]  # as the manager
+    assert by_email["dev3@test.dev"]["projects"] == []
+
+
+def test_completed_projects_leave_the_projects_column(client, world):
+    client.patch(f"/api/v1/projects/{world.p1.id}", json={"status": "COMPLETED"}, headers=auth(world.m1))
+    items = client.get("/api/v1/users", headers=auth(world.admin)).json()["items"]
+    assert next(u for u in items if u["email"] == "dev1@test.dev")["projects"] == []
+
+
+def test_user_profile_sections(client, world):
+    res = client.get(f"/api/v1/users/{world.dev1.id}/profile", headers=auth(world.admin))
+    assert res.status_code == 200
+    body = res.json()
+    assert body["user"]["email"] == "dev1@test.dev" and body["user"]["is_active"] is True
+    assert [m["id"] for m in body["managers"]] == [world.m1.id]
+    assert [p["name"] for p in body["current_projects"]] == ["Project One"]
+    assert body["current_projects"][0]["relation"] == "Member"
+    assert body["past_projects"] == []
+    assert [t["title"] for t in body["tasks"]] == ["First task"]
+    assert body["tasks"][0]["project_name"] == "Project One"
+
+
+def test_profile_past_projects_and_activity(client, world):
+    client.patch(f"/api/v1/projects/{world.p1.id}", json={"status": "COMPLETED"}, headers=auth(world.m1))
+    client.delete(f"/api/v1/projects/{world.p1.id}/members/{world.dev2.id}", headers=auth(world.m1))
+    dev1 = client.get(f"/api/v1/users/{world.dev1.id}/profile", headers=auth(world.admin)).json()
+    assert dev1["current_projects"] == []
+    assert [(p["name"], p["relation"]) for p in dev1["past_projects"]] == [("Project One", "Member")]
+    dev2 = client.get(f"/api/v1/users/{world.dev2.id}/profile", headers=auth(world.admin)).json()
+    assert [(p["name"], p["relation"]) for p in dev2["past_projects"]] == [("Project One", "Removed")]
+    assert dev2["activity"][0]["action"] == "MEMBER_REMOVED"  # the removal concerns dev2
+    m1 = client.get(f"/api/v1/users/{world.m1.id}/profile", headers=auth(world.admin)).json()
+    assert {a["action"] for a in m1["activity"]} == {"PROJECT_UPDATED", "MEMBER_REMOVED"}  # what m1 did
+
+
+def test_profile_access_rules(client, world):
+    assert client.get(f"/api/v1/users/{world.dev1.id}/profile", headers=auth(world.dev2)).status_code == 403
+    assert client.get(f"/api/v1/users/{world.dev1.id}/profile", headers=auth(world.m2)).status_code == 200
+    assert client.get(f"/api/v1/users/{world.m1.id}/profile", headers=auth(world.m2)).status_code == 403
+    assert client.get(f"/api/v1/users/{world.admin.id}/profile", headers=auth(world.m1)).status_code == 403
+    assert client.get("/api/v1/users/99999/profile", headers=auth(world.admin)).status_code == 404
+    assert client.get(f"/api/v1/users/{world.dev1.id}/profile").status_code == 401

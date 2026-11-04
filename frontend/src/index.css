@@ -270,6 +270,62 @@ body {
   margin-right: 4px;
 }
 
+/* ---------- Recent items popup ---------- */
+.kpi-card.clickable {
+  cursor: pointer;
+}
+.kpi-card.clickable:focus-visible {
+  outline: 2px solid var(--ant-color-primary, #0d9488);
+  outline-offset: 2px;
+}
+.kpi-card.clickable:hover .kpi-title {
+  color: var(--ant-color-primary, #0d9488);
+}
+.recent-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 28px; /* keeps "View all" clear of the modal close button */
+}
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recent-item {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.recent-item:hover {
+  background: color-mix(in srgb, var(--ant-color-primary, #0d9488) 7%, transparent);
+  border-color: var(--ant-color-primary, #0d9488);
+}
+.recent-item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.recent-item-title {
+  font-weight: 600;
+}
+.recent-item-sub {
+  font-size: 12px;
+  color: var(--ant-color-text-secondary, #666);
+}
+
 /* ---------- KPI cards (compact) ---------- */
 .kpi-grid {
   display: grid;
@@ -548,4 +604,68 @@ body {
     color: var(--ant-color-primary, #0d9488);
     font-weight: 500;
   }
+}
+
+/* ---------- Profile, activity and popups ---------- */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip-row .ant-tag {
+  margin-inline-end: 0;
+}
+.chip-note {
+  opacity: 0.7;
+  font-size: 11px;
+}
+.profile-section {
+  margin-bottom: 18px;
+}
+.profile-section h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ant-color-text-secondary, #666);
+}
+.footer-left {
+  text-align: left;
+}
+.footer-note {
+  font-size: 12px;
+  color: var(--ant-color-error, #ff4d4f);
+}
+.activity-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.activity-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ant-color-text-secondary, #666);
+}
+.activity-change span:first-child {
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+.activity-change span:last-child {
+  color: var(--ant-color-text, #1f1f1f);
+  font-weight: 500;
+}
+.activity-quote {
+  padding: 6px 10px;
+  border-left: 3px solid var(--ant-color-primary, #0d9488);
+  background: color-mix(in srgb, var(--ant-color-primary, #0d9488) 7%, transparent);
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.activity-time {
+  font-size: 12px;
 }

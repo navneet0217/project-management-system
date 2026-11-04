@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button, Card, Col, Row, Tabs } from 'antd'
-import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, HistoryOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons'
 import { projectsApi } from '../api/projects'
 import { useFetch } from '../hooks/useFetch'
 import { useAppSelector } from '../store'
@@ -9,6 +9,7 @@ import QueryState from '../components/QueryState'
 import KanbanBoard from '../components/KanbanBoard'
 import MembersCard from '../components/project/MembersCard'
 import ProjectSummary from '../components/project/ProjectSummary'
+import ActivityTab from '../components/project/ActivityTab'
 import TaskListTab from '../components/project/TaskListTab'
 import TaskDrawer from '../components/TaskDrawer'
 import TaskFormModal from '../components/TaskFormModal'
@@ -66,7 +67,9 @@ export default function ProjectDetail() {
                   )
                 }
               >
+                {/* destroyOnHidden: each tab reloads when opened, so Activity always shows the latest entries */}
                 <Tabs
+                  destroyOnHidden
                   items={[
                     {
                       key: 'board',
@@ -103,6 +106,15 @@ export default function ProjectDetail() {
                           onChanged={refresh}
                         />
                       ),
+                    },
+                    {
+                      key: 'activity',
+                      label: (
+                        <span>
+                          <HistoryOutlined /> Activity
+                        </span>
+                      ),
+                      children: <ActivityTab projectId={projectId} />,
                     },
                   ]}
                 />

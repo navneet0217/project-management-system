@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Avatar, Button, Card, List, Popconfirm, Select, Space, Tag } from 'antd'
 import { projectsApi } from '../../api/projects'
 import { usersApi } from '../../api/users'
+import AddMemberModal from '../AddMemberModal'
 import { BRAND } from '../../lib/brand'
 import type { UserOption } from '../../types'
 
@@ -17,25 +18,15 @@ export default function MembersCard({
   onChanged: () => void
 }) {
   const [candidates, setCandidates] = useState<UserOption[]>([])
-  const [selected, setSelected] = useState<number | undefined>()
+  const [pendingId, setPendingId] = useState<number | null>(null)
 
   useEffect(() => {
+    // options() returns active users only, so inactive developers never show up here
     if (canManage) usersApi.options('DEVELOPER').then(setCandidates).catch(() => {})
   }, [canManage])
 
-  const memberIds = new Set(members.map((m) => m.id))
-  const addable = candidates.filter((c) => !memberIds.has(c.id))
-
-  const add = async () => {
-    if (!selected) return
-    try {
-      await projectsApi.addMember(projectId, selected)
-      setSelected(undefined)
-      onChanged()
-    } catch {
-      // error toast comes from the axios interceptor
-    }
-  }
+  const memberIds = members.map((m) => m.id)
+  const addable = candidates.filter((c) => !memberIds.includes(c.id))
 
   const remove = async (id: number) => {
     try {
@@ -54,14 +45,12 @@ export default function MembersCard({
             showSearch
             optionFilterProp="label"
             placeholder="Add a developer"
-            style={{ width: 240 }}
-            value={selected}
-            onChange={setSelected}
+            style={{ width: 260 }}
+            value={null}
+            onChange={(id: number) => setPendingId(id)}
             options={addable.map((u) => ({ value: u.id, label: u.full_name }))}
+            notFoundContent="No more developers to add"
           />
-          <Button type="primary" disabled={!selected} onClick={add}>
-            Add
-          </Button>
         </Space>
       )}
       <List
@@ -92,6 +81,13 @@ export default function MembersCard({
             />
           </List.Item>
         )}
+      />
+      <AddMemberModal
+        projectId={projectId}
+        userId={pendingId}
+        alreadyMemberIds={memberIds}
+        onClose={() => setPendingId(null)}
+        onAdded={onChanged}
       />
     </Card>
   )

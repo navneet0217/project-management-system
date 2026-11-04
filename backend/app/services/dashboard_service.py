@@ -5,18 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.models import Priority, Project, ProjectMember, ProjectStatus, Role, Task, TaskStatus, User
 from app.schemas.dashboard import DashboardOut, DeadlineItem, ProjectProgress
+from app.services import task_service
 
 
 def build_dashboard(db: Session, user: User) -> DashboardOut:
     today = date.today()
 
-    # What counts as "my tasks" depends on the role.
-    if user.role == Role.ADMIN:
-        scope: list = []
-    elif user.role == Role.MANAGER:
-        scope = [Task.project_id.in_(select(Project.id).where(Project.manager_id == user.id))]
-    else:
-        scope = [Task.assignee_id == user.id]
+    # What counts as "my tasks" depends on the role (shared rule with the task list endpoint).
+    scope = task_service.task_scope(user)
 
     def count(*conditions) -> int:
         return db.scalar(select(func.count(Task.id)).where(*scope, *conditions)) or 0

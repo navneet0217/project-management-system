@@ -3,9 +3,10 @@ import { DatePicker, Form, Input, Modal, Select } from 'antd'
 import dayjs from 'dayjs'
 import { tasksApi } from '../api/tasks'
 import { PRIORITIES, toOptions } from '../lib/options'
-import type { Priority, Task, UserOption } from '../types'
+import type { Priority, Project, Task, UserOption } from '../types'
 
 interface FormValues {
+  project_id?: number
   title: string
   description?: string
   priority: Priority
@@ -13,23 +14,32 @@ interface FormValues {
   assignee_id?: number | null
 }
 
+// One form for two situations:
+// - manager/admin ("manage"): project is fixed, pick any member as assignee
+// - developer ("self"): the task is always for the developer; when creating, pick one of their projects
 export default function TaskFormModal({
   open,
   projectId,
   task,
-  members,
+  members = [],
+  projects,
+  mode = 'manage',
   onClose,
   onSaved,
 }: {
   open: boolean
-  projectId: number
+  projectId?: number
   task: Task | null
-  members: UserOption[]
+  members?: UserOption[]
+  projects?: Project[]
+  mode?: 'manage' | 'self'
   onClose: () => void
   onSaved: () => void
 }) {
   const [form] = Form.useForm<FormValues>()
   const [saving, setSaving] = useState(false)
+  const self = mode === 'self'
+  const pickProject = self && !task
 
   useEffect(() => {
     if (!open) return
@@ -46,17 +56,21 @@ export default function TaskFormModal({
   }, [open, task, form])
 
   const submit = async (v: FormValues) => {
-    const payload = {
+    const base = {
       title: v.title,
       description: v.description || null,
       priority: v.priority,
       deadline: v.deadline ? v.deadline.format('YYYY-MM-DD') : null,
-      assignee_id: v.assignee_id ?? null,
     }
     setSaving(true)
     try {
-      if (task) await tasksApi.update(task.id, payload)
-      else await tasksApi.create(projectId, payload)
+      if (task) {
+        // developers cannot change the assignee, so do not send it
+        await tasksApi.update(task.id, self ? base : { ...base, assignee_id: v.assignee_id ?? null })
+      } else {
+        const target = pickProject ? v.project_id! : projectId!
+        await tasksApi.create(target, self ? base : { ...base, assignee_id: v.assignee_id ?? null })
+      }
       onSaved()
       onClose()
     } catch {
@@ -69,13 +83,25 @@ export default function TaskFormModal({
   return (
     <Modal
       open={open}
-      title={task ? 'Edit task' : 'New task'}
+      title={task ? 'Edit task' : self ? 'Add my task' : 'New task'}
       onCancel={onClose}
       onOk={() => form.submit()}
       confirmLoading={saving}
+      centered
       destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={submit} initialValues={{ priority: 'MEDIUM' }}>
+        {pickProject && (
+          <Form.Item name="project_id" label="Project" rules={[{ required: true, message: 'Choose a project' }]}>
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder="Choose one of your projects"
+              options={(projects ?? []).map((p) => ({ value: p.id, label: p.name }))}
+              notFoundContent="You are not a member of any project yet"
+            />
+          </Form.Item>
+        )}
         <Form.Item name="title" label="Title" rules={[{ required: true, min: 3, max: 200 }]}>
           <Input />
         </Form.Item>
@@ -88,13 +114,15 @@ export default function TaskFormModal({
         <Form.Item name="deadline" label="Deadline">
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="assignee_id" label="Assignee">
-          <Select
-            allowClear
-            placeholder="Unassigned"
-            options={members.map((m) => ({ value: m.id, label: m.full_name }))}
-          />
-        </Form.Item>
+        {!self && (
+          <Form.Item name="assignee_id" label="Assignee">
+            <Select
+              allowClear
+              placeholder="Unassigned"
+              options={members.map((m) => ({ value: m.id, label: m.full_name }))}
+            />
+          </Form.Item>
+        )}
       </Form>
     </Modal>
   )

@@ -1,7 +1,10 @@
 from app.models.entities import (
     ActivityType,
+    AuditAction,
+    AuditEntity,
     Priority,
     Project,
+    ProjectActivity,
     ProjectMember,
     ProjectStatus,
     RefreshToken,
@@ -15,8 +18,11 @@ from app.models.entities import (
 
 __all__ = [
     "ActivityType",
+    "AuditAction",
+    "AuditEntity",
     "Priority",
     "Project",
+    "ProjectActivity",
     "ProjectMember",
     "ProjectStatus",
     "RefreshToken",

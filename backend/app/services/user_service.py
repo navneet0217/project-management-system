@@ -3,13 +3,53 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequest, Conflict, NotFound
 from app.core.security import hash_password
-from app.models import RefreshToken, Role, User
-from app.schemas.user import UserCreate, UserOut, UserUpdate
+from app.models import Project, ProjectMember, ProjectStatus, RefreshToken, Role, User
+from app.schemas.user import ProjectRef, UserCreate, UserListItem, UserUpdate
+
+SORT_COLUMNS = {
+    "full_name": User.full_name,
+    "email": User.email,
+    "role": User.role,
+    "is_active": User.is_active,
+    "created_at": User.created_at,
+}
+
+
+def project_allocations(db: Session, user_ids: list[int]) -> dict[int, list[ProjectRef]]:
+    """Current (not completed) projects per user: as a member, or as the manager."""
+    result: dict[int, list[ProjectRef]] = {uid: [] for uid in user_ids}
+    if not user_ids:
+        return result
+    as_member = db.execute(
+        select(ProjectMember.user_id, Project)
+        .join(Project, Project.id == ProjectMember.project_id)
+        .where(ProjectMember.user_id.in_(user_ids), Project.status != ProjectStatus.COMPLETED)
+        .order_by(Project.name)
+    ).all()
+    for uid, project in as_member:
+        result[uid].append(ProjectRef.model_validate(project))
+    managed = db.scalars(
+        select(Project)
+        .where(Project.manager_id.in_(user_ids), Project.status != ProjectStatus.COMPLETED)
+        .order_by(Project.name)
+    ).all()
+    for project in managed:
+        result[project.manager_id].append(ProjectRef.model_validate(project))
+    return result
 
 
 def list_users(
-    db: Session, search: str | None, role: Role | None, is_active: bool | None, page: int, size: int
-) -> tuple[list[UserOut], int]:
+    db: Session,
+    search: str | None,
+    role: Role | None,
+    is_active: bool | None,
+    sort_by: str,
+    order: str,
+    page: int,
+    size: int,
+) -> tuple[list[UserListItem], int]:
+    if sort_by not in SORT_COLUMNS:
+        raise BadRequest(f"sort_by must be one of: {', '.join(sorted(SORT_COLUMNS))}")
     stmt = select(User)
     if search:
         like = f"%{search}%"
@@ -19,8 +59,12 @@ def list_users(
     if is_active is not None:
         stmt = stmt.where(User.is_active.is_(is_active))
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    rows = db.scalars(stmt.order_by(User.id.desc()).offset((page - 1) * size).limit(size)).all()
-    return [UserOut.model_validate(u) for u in rows], total
+    column = SORT_COLUMNS[sort_by]
+    ordering = column.desc() if order == "desc" else column.asc()
+    rows = db.scalars(stmt.order_by(ordering, User.id.desc()).offset((page - 1) * size).limit(size)).all()
+    allocations = project_allocations(db, [u.id for u in rows])
+    items = [UserListItem.model_validate(u).model_copy(update={"projects": allocations[u.id]}) for u in rows]
+    return items, total
 
 
 def get_user(db: Session, user_id: int) -> User:

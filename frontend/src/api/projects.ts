@@ -1,5 +1,13 @@
 import api from './axios'
-import type { Page, Project, ProjectPayload, ProjectStatus, UserOption } from '../types'
+import type {
+  ActivityCategory,
+  Page,
+  Project,
+  ProjectActivity,
+  ProjectPayload,
+  ProjectStatus,
+  UserOption,
+} from '../types'
 
 export interface ProjectListParams {
   search?: string
@@ -8,7 +16,15 @@ export interface ProjectListParams {
   size?: number
 }
 
+export interface ActivityParams {
+  category?: ActivityCategory
+  page?: number
+  size?: number
+}
+
 export const projectsApi = {
+  activities: (id: number, params: ActivityParams) =>
+    api.get<Page<ProjectActivity>>(`/projects/${id}/activities`, { params }).then((r) => r.data),
   list: (params: ProjectListParams) =>
     api.get<Page<Project>>('/projects', { params }).then((r) => r.data),
   get: (id: number) => api.get<Project>(`/projects/${id}`).then((r) => r.data),

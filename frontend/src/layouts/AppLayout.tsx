@@ -11,6 +11,7 @@ import {
   MoonOutlined,
   SunOutlined,
   TeamOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons'
 import { logout } from '../store/authSlice'
 import { setSiderCollapsed, toggleDarkMode } from '../store/uiSlice'
@@ -39,6 +40,9 @@ export default function AppLayout() {
       { key: '/projects', icon: <FolderOpenOutlined />, label: 'Projects' },
       { key: '/my-tasks', icon: <CheckSquareOutlined />, label: 'My tasks' },
     ]
+    if (user.role !== 'DEVELOPER') {
+      all.push({ key: '/tasks', icon: <UnorderedListOutlined />, label: 'All tasks' })
+    }
     if (user.role === 'ADMIN') all.push({ key: '/users', icon: <TeamOutlined />, label: 'Users' })
     return all
   }, [user.role])
