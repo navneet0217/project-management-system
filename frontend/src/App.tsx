@@ -10,6 +10,9 @@ import { BRAND } from './lib/brand'
 // Pages load on demand, so the first screen downloads far less JavaScript.
 const Login = lazy(() => import('./pages/Login'))
 const Signup = lazy(() => import('./pages/Signup'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Projects = lazy(() => import('./pages/Projects'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
@@ -79,6 +82,9 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
               <Route path="/signup" element={<RedirectIfAuthed><Signup /></RedirectIfAuthed>} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route index element={<Dashboard />} />

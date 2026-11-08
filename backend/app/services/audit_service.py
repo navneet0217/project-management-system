@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import AuditAction, AuditEntity, Project, ProjectActivity, User
+from app.services import notification_service
 
 # The filter groups shown in the Activity tab
 CATEGORY_ENTITIES: dict[str, list[AuditEntity]] = {
@@ -63,6 +64,11 @@ def record(
             new_value=_text(new),
             comment=comment,
         )
+    )
+    notification_service.queue(
+        db, project_id=project_id, actor=actor, action=action, entity_type=entity_type, entity_id=entity_id,
+        entity_label=entity_label, target_user_id=target_user_id, field=field, old=_text(old), new=_text(new),
+        comment=comment,
     )
 
 

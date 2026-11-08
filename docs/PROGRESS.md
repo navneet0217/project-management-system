@@ -48,7 +48,8 @@ Rule: a feature is Done only after it was tested. Evidence = 66 backend tests + 
 - Notes: the DB has no `username` column, so profiles show name, email, status and member-since instead. Managers can open profiles of developers only.
 
 ## Auth pages
-- Signup: `POST /api/v1/auth/signup` {email, full_name, password}; role is always DEVELOPER (server-side), returns tokens. Frontend `/signup` + redesigned `/login` share `components/AuthShell.tsx`. 40 backend tests pass.
+- Signup: `POST /api/v1/auth/signup` {email, full_name, password}; role is always DEVELOPER (server-side). Since migration 0004 it returns no tokens: the user must click the emailed link (`/verify-email`). Also `/forgot-password`, `/reset-password`. Pages share `components/AuthShell.tsx`.
+- Email (Resend, `services/email_service.py`) + task-update notifications (`services/notification_service.py`, hooked into `audit_service.record`). Env: `RESEND_API_KEY`, `EMAIL_FROM`, `APP_URL`. Sandbox sender `onboarding@resend.dev` only delivers to the Resend account owner until a domain is verified. 92 backend tests pass.
 - Next idea: SSO via OAuth2/OIDC (Google/GitHub), see chat notes.
 
 ## Docker / CI-CD (built, local stack verified)

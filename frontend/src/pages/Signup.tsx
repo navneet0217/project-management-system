@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Alert, Button, Form, Input } from 'antd'
 import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
 import AuthShell from '../components/AuthShell'
-import { signup } from '../store/authSlice'
-import { useAppDispatch } from '../store'
+import { authApi } from '../api/auth'
 import { errorMessage } from '../api/axios'
 import { APP_NAME } from '../components/Logo'
 
@@ -16,22 +15,33 @@ interface SignupForm {
 }
 
 export default function Signup() {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sentTo, setSentTo] = useState<string | null>(null)
 
   const onFinish = async ({ full_name, email, password }: SignupForm) => {
     setLoading(true)
     setError(null)
     try {
-      await dispatch(signup({ full_name, email, password })).unwrap()
-      navigate('/', { replace: true })
+      await authApi.signup({ full_name, email, password })
+      setSentTo(email)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
+  }
+
+  if (sentTo) {
+    return (
+      <AuthShell
+        title="Check your email"
+        subtitle={`We sent a verification link to ${sentTo}. Open it to activate your account.`}
+        footer={<Link to="/login">Back to sign in</Link>}
+      >
+        <Alert type="success" showIcon title="Account created. The link is valid for 24 hours." />
+      </AuthShell>
+    )
   }
 
   return (

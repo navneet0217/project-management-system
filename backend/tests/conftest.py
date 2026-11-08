@@ -5,6 +5,8 @@ from types import SimpleNamespace
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-long-enough-for-hs256-tests"
 os.environ["RATE_LIMIT_PER_MINUTE"] = "1000"
+os.environ["EMAIL_ASYNC"] = "false"  # send inline so tests can read the outbox right away
+os.environ["RESEND_API_KEY"] = ""  # tests never talk to Resend
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -13,7 +15,7 @@ from sqlalchemy.orm import sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
 from app.core.security import create_access_token, hash_password  # noqa: E402
-from app.db.base import Base  # noqa: E402
+from app.db.base import Base, utcnow  # noqa: E402
 from app.db.session import get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Priority, Project, ProjectMember, ProjectStatus, Role, Task, User  # noqa: E402
@@ -54,7 +56,13 @@ def client(session_factory):
 
 
 def _user(db, email, role, name=None):
-    user = User(email=email, full_name=name or email.split("@")[0], role=role, hashed_password=hash_password(PASSWORD))
+    user = User(
+        email=email,
+        full_name=name or email.split("@")[0],
+        role=role,
+        hashed_password=hash_password(PASSWORD),
+        email_verified_at=utcnow(),
+    )
     db.add(user)
     db.flush()
     return user
@@ -84,3 +92,13 @@ def world(db):
 
 def auth(user) -> dict:
     return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
+
+@pytest.fixture(autouse=True)
+def outbox():
+    """Every test gets a fresh in-memory mail provider; read sent emails from outbox.sent."""
+    from app.services import email_service
+
+    provider = email_service.ConsoleProvider()
+    email_service._provider = provider
+    yield provider
+    email_service._provider = None

@@ -77,6 +77,11 @@ class AuditEntity(str, enum.Enum):
     COMMENT = "COMMENT"
 
 
+class TokenPurpose(str, enum.Enum):
+    VERIFY_EMAIL = "VERIFY_EMAIL"
+    RESET_PASSWORD = "RESET_PASSWORD"
+
+
 def _enum(e: type[enum.Enum]) -> Enum:
     # Stored as VARCHAR (not a native DB enum) so adding a value later is a simple migration.
     return Enum(e, native_enum=False, length=20)
@@ -93,6 +98,8 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
     # Soft remove: the row stays (tasks, activity and history keep pointing at it) but the user is hidden and cannot log in.
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    # NULL = the user has not proved they own the email address yet (cannot log in)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP")
     )
@@ -238,6 +245,22 @@ class ProjectActivity(Base):
     @property
     def project_name(self) -> str | None:
         return self.project.name if self.project else None
+
+
+class AuthToken(Base):
+    """One-time emailed tokens (verify email, reset password). Only the SHA-256 hash is stored."""
+
+    __tablename__ = "auth_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    purpose: Mapped[TokenPurpose] = mapped_column(Enum(TokenPurpose, native_enum=False, length=20))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP")
+    )
 
 
 class RefreshToken(Base):

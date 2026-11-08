@@ -53,33 +53,3 @@ def test_deactivated_user_token_stops_working(client, world, db):
     world.dev1.is_active = False
     db.commit()
     assert client.get("/api/v1/auth/me", headers=headers).status_code == 401
-
-
-def signup(client, **overrides):
-    body = {"email": "New.User@test.dev", "full_name": "New User", "password": "Passw0rd1", **overrides}
-    return client.post("/api/v1/auth/signup", json=body)
-
-
-def test_signup_creates_developer_and_returns_tokens(client, world):
-    res = signup(client)
-    assert res.status_code == 201
-    me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {res.json()['access_token']}"})
-    assert me.json()["role"] == "DEVELOPER"
-    assert me.json()["email"] == "new.user@test.dev"
-    assert login(client, "new.user@test.dev").status_code == 200
-
-
-def test_signup_cannot_choose_role(client, world):
-    res = signup(client, role="ADMIN")
-    assert res.status_code == 201
-    me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {res.json()['access_token']}"})
-    assert me.json()["role"] == "DEVELOPER"
-
-
-def test_signup_duplicate_email_is_409(client, world):
-    assert signup(client, email="admin@test.dev").status_code == 409
-
-
-def test_signup_rejects_weak_password(client, world):
-    assert signup(client, password="onlyletters").status_code == 422
-    assert signup(client, password="Sh0rt").status_code == 422

@@ -2,6 +2,7 @@ from app.models.entities import (
     ActivityType,
     AuditAction,
     AuditEntity,
+    AuthToken,
     Priority,
     Project,
     ProjectActivity,
@@ -13,6 +14,7 @@ from app.models.entities import (
     TaskActivity,
     TaskComment,
     TaskStatus,
+    TokenPurpose,
     User,
 )
 
@@ -20,6 +22,7 @@ __all__ = [
     "ActivityType",
     "AuditAction",
     "AuditEntity",
+    "AuthToken",
     "Priority",
     "Project",
     "ProjectActivity",
@@ -31,5 +34,6 @@ __all__ = [
     "TaskActivity",
     "TaskComment",
     "TaskStatus",
+    "TokenPurpose",
     "User",
 ]

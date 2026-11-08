@@ -26,6 +26,24 @@ class SignupRequest(BaseModel):
     _pw = field_validator("password")(_check_password)
 
 
+class EmailRequest(BaseModel):
+    email: EmailStr
+
+
+class TokenRequest(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+
+
+class ResetPasswordRequest(TokenRequest):
+    password: str = Field(min_length=8, max_length=128)
+
+    _pw = field_validator("password")(_check_password)
+
+
+class MessageOut(BaseModel):
+    detail: str
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(min_length=10, max_length=200)
 

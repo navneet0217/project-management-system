@@ -88,7 +88,7 @@ def get_user(db: Session, user_id: int) -> User:
     return user
 
 
-def create_user(db: Session, data: UserCreate) -> User:
+def create_user(db: Session, data: UserCreate, verified: bool = True) -> User:
     email = data.email.lower()
     if db.scalar(select(User.id).where(User.email == email)):
         raise Conflict("A user with this email already exists")
@@ -97,6 +97,7 @@ def create_user(db: Session, data: UserCreate) -> User:
         full_name=data.full_name.strip(),
         hashed_password=hash_password(data.password),
         role=data.role,
+        email_verified_at=utcnow() if verified else None,  # admin-created accounts are trusted
     )
     db.add(user)
     db.commit()

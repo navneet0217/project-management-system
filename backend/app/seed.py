@@ -1,5 +1,5 @@
 """Create demo data:  python -m app.seed   (safe to run twice: it skips if data exists)."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 
@@ -15,7 +15,13 @@ ADMIN_EMAIL = "admin@demo.dev"
 
 
 def _user(db, email: str, name: str, role: Role) -> User:
-    user = User(email=email, full_name=name, role=role, hashed_password=hash_password(settings.SEED_PASSWORD))
+    user = User(
+        email=email,
+        full_name=name,
+        role=role,
+        hashed_password=hash_password(settings.SEED_PASSWORD),
+        email_verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
+    )
     db.add(user)
     db.flush()
     return user

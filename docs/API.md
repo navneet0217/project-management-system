@@ -11,6 +11,13 @@ Lists return `{items, total, page, size}`.
 | POST | /auth/refresh | anyone | body `{refresh_token}` -> NEW pair (old refresh token is now dead) |
 | POST | /auth/logout | anyone | body `{refresh_token}` -> 204 |
 | GET | /auth/me | any user | current user |
+| POST | /auth/signup | anyone | body `{email, full_name, password}` -> 201 `{detail}`; sends a verification email, no tokens until verified |
+| POST | /auth/verify-email | anyone | body `{token}`; single use, 24 h |
+| POST | /auth/resend-verification | anyone | body `{email}` -> 202 (never reveals if the email exists) |
+| POST | /auth/forgot-password | anyone | body `{email}` -> 202 (same privacy rule) |
+| POST | /auth/reset-password | anyone | body `{token, password}`; 30 min, single use, revokes all refresh tokens |
+
+Login returns 403 "verify your email" until the address is verified. Admin-created, seeded and pre-existing users count as verified (migration 0004). Task, comment and member changes email the project manager and the assignee (never the actor) after the DB commit. Email uses Resend when `RESEND_API_KEY` is set, otherwise it is logged to the console.
 
 Access token lives 15 min, refresh token 7 days. Frontend: on 401, call /auth/refresh once, retry the request;
 if that fails, log out.

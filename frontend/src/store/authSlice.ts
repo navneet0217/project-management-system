@@ -24,12 +24,6 @@ export const login = createAsyncThunk(
     startSession(await authApi.login(cred.email, cred.password), dispatch),
 )
 
-export const signup = createAsyncThunk(
-  'auth/signup',
-  async (data: { email: string; full_name: string; password: string }, { dispatch }) =>
-    startSession(await authApi.signup(data), dispatch),
-)
-
 // Restore the session on page load using the stored refresh token.
 // The axios 401 interceptor does the refresh, so we just call /auth/me.
 export const restoreSession = createAsyncThunk('auth/restore', async () => {
@@ -64,9 +58,6 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(login.fulfilled, (state, action) => {
-        state.user = action.payload
-      })
-      .addCase(signup.fulfilled, (state, action) => {
         state.user = action.payload
       })
       .addCase(restoreSession.fulfilled, (state, action) => {

@@ -288,7 +288,7 @@ def add_comment(db: Session, user: User, task_id: int, body: str) -> CommentOut:
     db.flush()
     audit_service.record(
         db, project_id=project.id, actor=user, action=AuditAction.COMMENT_ADDED, entity_type=AuditEntity.COMMENT,
-        entity_id=comment.id, entity_label=task.title, new=comment.body,
+        entity_id=comment.id, entity_label=task.title, new=comment.body, target_user_id=task.assignee_id,
     )
     db.commit()
     return CommentOut.model_validate(comment)
