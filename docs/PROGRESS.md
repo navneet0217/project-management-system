@@ -1,5 +1,40 @@
 # Progress Tracker
 
+## Roadmap status (verified 2026-11-08 by running the app, not by reading code)
+Rule: a feature is Done only after it was tested. Evidence = 66 backend tests + a live end-to-end run (API, RBAC, activity log, UI in 3 screen sizes, Kanban drag).
+
+### Done (verified)
+| # | Feature | Evidence |
+|---|---|---|
+| 1,2 | Dashboard, 8 KPI cards, count-up, teal theme | browser test |
+| 3 | Dark/light toggle (persists after reload) | browser test |
+| 4 | Responsive 1440 / 820 / 390 px, no horizontal overflow, bottom nav on small screens | browser test |
+| 5-8 | View all on all 4 dashboard sections | browser test |
+| 9,10 | Clickable Total projects / Total tasks with recent-5 popups | browser test |
+| 11 | Role capsule removed | browser test |
+| 12,13,16 | Project and task create/update/delete, priority, deadline, assignee | API test |
+| 14,15 | Kanban drag-and-drop, saved to server | browser test (rollback path covered by unit logic only) |
+| 17 | Search / filter / server-side sorting (projects, tasks, users), SQL injection safe | API test |
+| 18 | Task deletion needs a reason (422 without it) | API + browser |
+| 19,39 | Project activity timeline (stored in DB) | API test |
+| 20 | Project member add/remove with details popup | browser test |
+| 22,23 | RBAC enforced server-side, role-based nav, IDOR blocked (404) | API + browser |
+| 26,27,28,29 | Active/inactive switch, profile, current projects, project history | browser test |
+| 30,34,35 | Login/logout, Argon2 hashing, JWT validation, refresh rotation + reuse detection | API test |
+| 37 | Login rate limit (429 after 20 tries/min per IP, in-memory) | API test |
+
+### Pending (verified missing by probing the API)
+- **Roles model (24, 25):** each user has ONE role column. No User/Role/Permission tables, no `/roles`.
+- **Users grid:** no Manager column, no remove-user (only deactivate).
+- **Activity:** `PROJECT_CREATED` is not logged. "Member role changed" does not exist (needs the roles model).
+- **Auth (31, 32, 33, 36, 41, 42):** no forgot-password, reset-password or email verification endpoints, no email service.
+- **Notifications (38):** no email on task updates.
+- **To Verify (40):** task comments work (API test); no edit/delete of comments.
+- **Quality gates:** no frontend tests, no dependency or security scan in CI, no DB backup, refresh token is in `localStorage`, CORS allows all methods, no `docs/architecture` or module READMEs.
+
+### Plan (user-approved order)
+1 verify (this section) -> 2 users grid -> 3 CI + Vitest -> 4 security hardening -> 5 reset/verify email (Resend) -> 6 notifications -> 7 multi-role + permissions -> 8 frontend `modules/` -> 9 docs + diagrams.
+
 ## Branding
 - App name: **Tasklane** (name + logo in `frontend/src/components/Logo.tsx`, favicon `frontend/public/favicon.svg`, colours in `frontend/src/lib/brand.ts`). Teal theme (#0d9488). Logo = three rising Kanban lanes on a teal tile.
 

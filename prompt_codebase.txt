@@ -1,0 +1,946 @@
+Project Management & Task Tracking System
+
+Master Development Guidelines
+
+Your requirements are organized into a proper Project Scope, Feature Roadmap, Architecture Standards, Security Standards, Agentic AI Skills, Testing Standards, and Development Workflow so that this document acts as the project's master development guideline.
+
+The goal is not just to build a CRUD application. The goal is to build a polished, production-style, secure, modular, tested, documented and demonstrable full-stack engineering project.
+
+---
+
+1. Project Overview
+
+Project: Project Management & Task Tracking System
+
+Objective: Build a production-style full-stack POC/MVP that demonstrates real-world software engineering practices, with a polished UI and standout features suitable for a technical demonstration.
+
+Technology Stack
+
+Layer| Technology
+Frontend| React.js + TypeScript + Vite
+UI Library| Ant Design
+State Management| Redux Toolkit (RTK)
+Backend| Python + FastAPI
+Database| MySQL 8
+ORM| SQLAlchemy
+Migrations| Alembic
+Authentication| JWT / OAuth 2.0 where applicable
+Authorization| Role-Based Access Control (RBAC)
+Containerization| Docker + Docker Compose
+CI/CD| GitHub Actions
+Container Registry| GitHub Container Registry
+Hosting| Self-hosted server + Cloudflare Tunnel
+
+---
+
+2. Feature Roadmap With Dynamic Status
+
+Status values:
+
+- Done — implemented, tested and verified.
+- In Progress — currently being implemented.
+- Pending — not started.
+- To Verify — implementation may exist but has not yet been properly verified.
+- Blocked — cannot proceed because of a dependency/blocker.
+
+Important Status Rule
+
+Statuses must be updated whenever actual development progresses.
+
+For example:
+
+Pending
+   ↓
+In Progress
+   ↓
+Implemented
+   ↓
+Tested
+   ↓
+Verified
+   ↓
+Done
+
+A feature must not be marked "Done" merely because code has been written.
+
+Whenever a feature is successfully implemented and tested:
+
+1. Update its status in the project roadmap.
+2. Update "docs/PROGRESS.md".
+3. Document important implementation details.
+4. Add/update relevant tests.
+5. Run the appropriate validation/security checks.
+6. Commit the completed work.
+
+If an existing feature is discovered to already be properly implemented and tested, update its status to Done after verification rather than rebuilding it.
+
+---
+
+3. Feature Roadmap
+
+A. Dashboard and UI
+
+#| Feature| Status
+1| Dashboard with KPI cards and count-up animations (8 cards)| Done
+2| Consistent teal theme across the application| Done
+3| Dark/light mode toggle| Pending
+4| Responsive UI for desktop, tablet and mobile| To Verify
+5| View All button for Tasks by Status| Pending
+6| View All button for Tasks by Priority| Pending
+7| View All button for Project Progress| Pending
+8| View All button for Upcoming Deadlines| Pending
+9| Clickable Total Projects KPI with recent 5 items popup| Pending
+10| Clickable Total Tasks KPI with recent 5 items popup| Pending
+11| Remove role-name capsule from KPI area| Pending
+
+Dashboard requirements
+
+For these four sections:
+
+- Tasks by Status
+- Tasks by Priority
+- Project Progress
+- Upcoming Deadlines
+
+Add a View All button at the top-right of each section.
+
+The Total Projects and Total Tasks KPI cards must be clickable.
+
+Clicking either card should open a centered popup/modal on the same screen displaying:
+
+- Recent 5 items
+- Relevant information
+- "View All" button at the top-right
+
+Remove the role-name capsule currently displayed around/above the KPI cards.
+
+---
+
+4. Project and Task Management
+
+#| Feature| Status
+12| Create, view, update and delete projects| Pending
+13| Create, view, update and delete tasks| Pending
+14| Kanban board with drag-and-drop task movement| Done
+15| Optimistic UI updates with rollback when server rejects task movement| Done
+16| Task priorities, deadlines and assignments| Pending
+17| Search, filtering and sorting for projects and tasks| Pending
+18| Task deletion confirmation with mandatory comment| Pending
+19| Project activity/audit timeline| Pending
+20| Project member management| Pending
+
+---
+
+5. User Management and Access Control
+
+#| Feature| Status
+21| User management (add, view, edit and remove users)| Pending
+22| Role-Based Access Control (RBAC)| Pending
+23| Role-based dashboards, navigation and permissions| Pending
+24| Multiple users assigned to same role| Pending
+25| Multiple roles assigned to single user| Pending
+26| User active/inactive control| Pending
+27| Detailed user profile| Pending
+28| Current project allocation display| Pending
+29| User project history| Pending
+
+Database design
+
+Implement a many-to-many relationship between Users and Roles.
+
+User
+ ↓
+UserRole
+ ↓
+Role
+ ↓
+RolePermission
+ ↓
+Permission
+
+Requirements:
+
+- Multiple users can have the same role.
+- One user can have multiple roles.
+- Permissions are managed independently from users.
+- Roles must not be hardcoded directly into user records.
+
+---
+
+6. Users Screen
+
+The user grid should contain appropriate columns such as:
+
+- Name
+- Email
+- Role(s)
+- Projects
+- Manager
+- Status
+- Actions
+
+Projects column
+
+The Projects column indicates the user's current allocation.
+
+Important:
+
+- Project information is fetched from the backend.
+- There must be no project field in Add User.
+- There must be no project field in Edit User.
+- Project allocation is managed through project/member management.
+
+Actions
+
+The table should provide:
+
+View Profile | Edit | Active/Inactive
+
+Active/Inactive must be beside Edit and not inside the Edit popup.
+
+Sorting
+
+Every appropriate grid column must support sorting.
+
+---
+
+7. User Profile
+
+Provide a View Profile option beside Edit and Active/Inactive.
+
+The detailed profile should display:
+
+- Basic information
+- Email
+- Account status
+- Roles
+- Manager
+- Current projects
+- Previous/past projects
+- Current tasks
+- Completed/recent tasks
+- Relevant activity
+
+The profile should primarily be a detailed read-only view.
+
+---
+
+8. My Tasks Screen
+
+Users should be able to manage their own tasks:
+
+- Add
+- View
+- Edit
+- Delete
+- Update status
+- Update appropriate task properties
+
+Sorting functionality must be available on each appropriate grid column.
+
+Backend-side sorting should be used where datasets can become large.
+
+---
+
+9. Projects Screen
+
+Delete Task
+
+Deleting a task must require a mandatory comment.
+
+Example:
+
+Delete Task
+
+Reason for deletion *
+[________________________]
+
+Cancel                 Delete Task
+
+The task must not be deleted if the comment is empty.
+
+The deletion reason must be stored in the project's activity history.
+
+---
+
+10. Project Activity
+
+Add an Activity tab to each project.
+
+It must record meaningful project-related actions, including:
+
+- Project created
+- Project updated
+- Task created
+- Task updated
+- Task deleted
+- Task assigned
+- Task reassigned
+- Task status changed
+- Task priority changed
+- Deadline changed
+- Member added
+- Member removed
+- Member role changed
+- Other relevant project actions
+
+Recommended structure:
+
+project_activity_logs
+---------------------
+id
+project_id
+actor_user_id
+action
+entity_type
+entity_id
+description
+metadata
+created_at
+
+Activity entries should identify:
+
+- Who performed the action.
+- What happened.
+- Which entity was affected.
+- When it happened.
+- Relevant metadata where applicable.
+
+---
+
+11. Project Member Management
+
+From the Members dropdown, selecting a member should open a popup containing the user's details.
+
+Display:
+
+- Name
+- Email
+- Current role(s)
+- Manager
+- Current projects
+- Previous projects
+- Current tasks
+- Account status
+- Other relevant information
+
+Bottom buttons:
+
+Cancel                 Add
+
+Adding the member should:
+
+1. Create the project-member relationship.
+2. Update the project.
+3. Generate an activity-log entry.
+
+---
+
+12. Authentication and Account Security
+
+#| Feature| Status
+30| Secure login and logout| To Verify
+31| Forgot password functionality| Pending
+32| Password reset through email verification link| Pending
+33| Email verification for newly registered users| Pending
+34| Secure password hashing| To Verify
+35| JWT validation| To Verify
+36| Session/token invalidation after password reset| Pending
+37| Authentication endpoint rate limiting| Pending
+
+---
+
+13. Forgot Password and Email Reset
+
+Implement a complete secure password-reset system.
+
+Flow:
+
+Forgot Password
+      ↓
+POST /api/auth/forgot-password
+      ↓
+Generate secure random token
+      ↓
+Hash token
+      ↓
+Store token hash + user + expiry
+      ↓
+Send reset email
+      ↓
+User clicks email link
+      ↓
+Reset Password page
+      ↓
+POST /api/auth/reset-password
+      ↓
+Validate token
+      ↓
+Check expiration
+      ↓
+Check single-use status
+      ↓
+Validate new password
+      ↓
+Hash new password
+      ↓
+Update password
+      ↓
+Invalidate reset token
+      ↓
+Invalidate existing sessions/refresh tokens where applicable
+
+Reset tokens must:
+
+- Be cryptographically random.
+- Be short-lived.
+- Be single-use.
+- Expire after an appropriate period.
+- Never be stored as plaintext.
+- Be invalidated after successful use.
+
+Recommended table:
+
+password_reset_tokens
+---------------------
+id
+user_id
+token_hash
+expires_at
+used_at
+created_at
+
+Email service
+
+Email functionality must be separated from authentication business logic.
+
+AuthenticationService
+        ↓
+EmailService
+        ↓
+Email Provider
+
+The provider should be replaceable without changing authentication business logic.
+
+Potential providers:
+
+- SMTP
+- Resend
+- SendGrid
+- Other appropriate transactional email provider
+
+Password-reset email should include:
+
+- Application name.
+- Password-reset explanation.
+- Secure reset link.
+- Expiration information.
+- Security warning if the user did not request the reset.
+
+---
+
+14. Collaboration and Notifications
+
+#| Feature| Status
+38| Email notifications for task updates| Pending
+39| Activity log for application changes| Pending
+40| Task comments and collaboration| To Verify
+41| Password-reset email notifications| Pending
+42| Email verification notifications| Pending
+
+---
+
+15. Modular Architecture
+
+Follow a modular monolith architecture.
+
+Requirements:
+
+- Separation of concerns.
+- Reusable components/services.
+- Business logic separated from API routes.
+- Repository/service patterns where appropriate.
+- Avoid unnecessary duplication.
+- Consistent naming.
+- Small focused modules.
+- Avoid huge files/functions/classes.
+- Avoid unnecessary abstractions.
+- Avoid copy-paste architecture.
+- Keep modules independently testable.
+
+AI must not introduce abstractions simply because they appear architecturally sophisticated.
+
+---
+
+16. Redux Toolkit
+
+Suggested frontend structure:
+
+frontend/
+└── src/
+    ├── app/
+    │   └── store.ts
+    ├── components/
+    ├── layouts/
+    ├── modules/
+    │   ├── auth/
+    │   ├── dashboard/
+    │   ├── users/
+    │   ├── projects/
+    │   └── tasks/
+    ├── services/
+    ├── hooks/
+    ├── routes/
+    ├── theme/
+    └── utils/
+
+Avoid putting the entire application into one large Redux slice.
+
+---
+
+17. Documentation
+
+Every major module should have its own README.
+
+docs/
+├── architecture/
+│   └── ARCHITECTURE.md
+├── modules/
+│   ├── authentication/
+│   │   ├── README.md
+│   │   └── UNIT_TESTING.md
+│   ├── users/
+│   │   ├── README.md
+│   │   └── UNIT_TESTING.md
+│   ├── projects/
+│   │   ├── README.md
+│   │   └── UNIT_TESTING.md
+│   └── tasks/
+│       ├── README.md
+│       └── UNIT_TESTING.md
+└── deployment/
+    └── CI_CD.md
+
+Each module's documentation should explain:
+
+- Purpose.
+- Responsibilities.
+- Folder structure.
+- Important components/files.
+- API endpoints.
+- Dependencies.
+- How to use and extend the module.
+- How to run tests.
+- Security considerations where applicable.
+
+---
+
+18. Architecture Diagram
+
+Create and maintain architecture documentation showing:
+
+- Frontend architecture.
+- Redux data flow.
+- Backend modular structure.
+- API communication.
+- Authentication.
+- Authorization/RBAC.
+- Database relationships.
+- User/Role/Permission relationships.
+- Docker services.
+- CI/CD pipeline.
+- Cloudflare Tunnel.
+- Email/password-reset flow.
+- External services.
+
+Architecture documentation must reflect the actual implementation, not assumptions.
+
+---
+
+19. Agentic AI Development Skills
+
+The project will use dedicated agentic AI skills as engineering quality gates.
+
+These skills must complement—not replace—developer review, tests and security controls.
+
+A. Archify
+
+Use Archify as the project's agentic architecture/documentation skill.
+
+It should be used to understand and document the actual codebase and architecture.
+
+Use it for:
+
+- System architecture.
+- Frontend/backend architecture.
+- API/data flow.
+- Authentication flow.
+- RBAC/permission flow.
+- Database/ERD relationships.
+- Project/task workflows.
+- CI/CD architecture.
+- Cloudflare Tunnel architecture.
+- Password-reset/email flow.
+
+Important:
+
+Archify diagrams/documentation must be based on the actual codebase.
+
+When major architecture changes occur, update the relevant architecture documentation.
+
+---
+
+B. Ponytail
+
+Use Ponytail as an agentic engineering-discipline/code-quality skill.
+
+Purpose:
+
+- Read existing code before modifying it.
+- Avoid unnecessary files.
+- Reuse existing components/utilities.
+- Reduce unnecessary abstractions.
+- Detect over-engineering.
+- Keep code understandable.
+- Preserve security.
+- Preserve validation.
+- Preserve error handling.
+- Preserve accessibility.
+- Encourage appropriate tests.
+
+Do not use it as a blind automatic rewrite.
+
+---
+
+C. Unslop
+
+Reference:
+
+theclaymethod/unslop
+
+Use it as a code-quality review/refactoring step to identify:
+
+- AI-generated code patterns.
+- Redundant abstractions.
+- Verbose code.
+- Inconsistent naming.
+- Repetitive implementations.
+- Unnecessary comments.
+- Over-engineering.
+
+Any accepted refactoring must be followed by tests.
+
+---
+
+D. Cloudflare Security Audit Skill
+
+Use the appropriate Cloudflare Security Audit agentic skill for security reviews.
+
+Use it to review:
+
+- Authentication.
+- Authorization.
+- RBAC.
+- APIs.
+- Secrets.
+- Database interactions.
+- Input validation.
+- CORS.
+- Token/session handling.
+- Deployment.
+- Cloudflare Tunnel.
+- User/project/task access.
+
+It is not a replacement for:
+
+- Unit testing.
+- Integration testing.
+- Dependency scanning.
+- Manual review.
+- Secure coding.
+
+---
+
+20. Vibe-Coding Failure Prevention Checklist
+
+The application must explicitly check the common failure points identified in the "Why vibe coded apps fail" reference.
+
+Security
+
+- [ ] API keys are not exposed in frontend.
+- [ ] Authentication is enforced server-side.
+- [ ] Authorization/RBAC is enforced server-side.
+- [ ] SQL injection is prevented.
+- [ ] Input validation is implemented.
+- [ ] XSS risks are addressed.
+- [ ] Passwords are securely hashed.
+- [ ] CORS is restricted.
+- [ ] ".env" and secrets are not committed.
+- [ ] Rate limiting exists for sensitive endpoints.
+- [ ] IDOR is prevented.
+- [ ] Dependencies are scanned.
+
+Backend / Scale
+
+- [ ] Database schema is deliberately designed.
+- [ ] Appropriate indexes exist.
+- [ ] N+1 queries are prevented.
+- [ ] Pagination exists where necessary.
+- [ ] Caching is considered where useful.
+- [ ] Centralized error handling exists.
+- [ ] Logging exists.
+- [ ] Monitoring/health checks exist.
+- [ ] Database backup strategy exists.
+- [ ] Rollback strategy exists.
+
+Code
+
+- [ ] Unit tests exist.
+- [ ] Integration/API tests exist.
+- [ ] Code is modular.
+- [ ] No unnecessary copy-paste.
+- [ ] No unnecessary abstractions.
+- [ ] AI-generated code is reviewed.
+- [ ] Code can be understood and debugged by a human developer.
+
+---
+
+21. Unit and Integration Testing
+
+Every major module must have tests.
+
+Required areas:
+
+Authentication
+Users
+Roles/Permissions
+Projects
+Tasks
+Dashboard
+Notifications
+Activity Logs
+
+Tests should cover:
+
+- Normal behaviour.
+- Validation.
+- Error handling.
+- Authorization.
+- Edge cases.
+- Security-sensitive behaviour.
+
+Important security tests include:
+
+User A cannot access User B's protected resources.
+
+Unauthorized users cannot perform restricted operations.
+
+Inactive users cannot authenticate/use protected functionality.
+
+Expired password-reset tokens are rejected.
+
+Used password-reset tokens cannot be reused.
+
+Invalid reset tokens are rejected.
+
+Users cannot bypass RBAC through direct API requests.
+
+---
+
+22. Performance Optimization
+
+Requirements:
+
+- Optimize API response times.
+- Avoid unnecessary database queries.
+- Add appropriate indexes.
+- Use pagination for large datasets.
+- Prevent N+1 queries.
+- Optimize frontend rendering.
+- Avoid unnecessary Redux state updates.
+- Avoid unnecessary API calls.
+- Measure performance before and after optimization.
+
+---
+
+23. CI/CD
+
+GitHub Actions should automate:
+
+1. Code quality checks.
+2. Frontend linting.
+3. Backend linting.
+4. Type checking.
+5. Unit tests.
+6. Integration tests.
+7. Dependency/security scanning.
+8. Docker image builds.
+9. GHCR publishing.
+10. Deployment after merging into "dev".
+11. Appropriate security-review steps.
+
+Document:
+
+- Environment variables.
+- Secrets.
+- Deployment requirements.
+- Docker configuration.
+- CI/CD workflow.
+
+---
+
+24. Cloudflare Tunnel
+
+The application must be accessible through a public URL without exposing local server ports directly.
+
+To retrieve the generated TryCloudflare URL:
+
+docker compose logs cloudflared | findstr trycloudflare
+
+Verify after deployment:
+
+- Frontend.
+- Backend API.
+- Authentication.
+- Authorization.
+- Password reset.
+- CORS.
+- API communication.
+- Cloudflare Tunnel connectivity.
+
+---
+
+25. Definition of Done
+
+A feature is not complete merely because the UI works.
+
+Feature implemented
+        ↓
+Frontend validation
+        ↓
+Backend validation
+        ↓
+Authorization verified
+        ↓
+Error handling verified
+        ↓
+Unit tests
+        ↓
+Integration/API tests
+        ↓
+Security review where applicable
+        ↓
+Database/query review
+        ↓
+Performance review where applicable
+        ↓
+Documentation updated
+        ↓
+Archify updated if architecture changed
+        ↓
+Ponytail review
+        ↓
+Unslop review where applicable
+        ↓
+CI passes
+        ↓
+Manual verification
+        ↓
+PROGRESS.md updated
+        ↓
+Roadmap status updated
+        ↓
+Commit + push
+
+Only then should the feature be marked Done.
+
+---
+
+26. Dynamic Status Management
+
+The roadmap is a living document.
+
+Whenever we work on the project:
+
+Before implementation
+
+Pending
+
+While implementing
+
+In Progress
+
+Implemented but not fully verified
+
+To Verify
+
+Implemented + tested + verified
+
+Done
+
+If blocked
+
+Blocked
+
+Whenever something becomes Done, update:
+
+1. Master roadmap status
+2. docs/PROGRESS.md
+3. Module documentation if applicable
+4. Tests
+5. Architecture documentation if applicable
+
+Never claim a feature is Done without verification.
+
+---
+
+27. Development Workflow
+
+Branching
+
+main
+ └── Stable production
+
+dev
+ └── Active integration
+
+feature/feature-name
+ └── Individual development
+
+Workflow:
+
+1. Create feature branch from "dev".
+2. Understand existing implementation.
+3. Implement feature.
+4. Add/update tests.
+5. Run linting/type checks.
+6. Run security checks where applicable.
+7. Run agentic code-quality reviews.
+8. Open PR into "dev".
+9. Review and merge.
+10. CI/CD runs.
+11. Deploy to self-hosted environment.
+12. Verify.
+13. Update status to Done.
+14. Update "PROGRESS.md".
+15. Promote stable changes to "main" when appropriate.
+
+---
+
+28. Development Execution Rules
+
+These rules govern how we work together:
+
+1. Work incrementally, one day/task at a time.
+2. First understand the existing codebase before modifying anything.
+3. Never rebuild something already implemented and working.
+4. Explain what we are building and why.
+5. Give exact commands with the working directory.
+6. Explain expected output of important commands.
+7. Wait for confirmation before proceeding to the next day.
+8. Maintain existing architecture and coding conventions.
+9. Add/update tests for every module.
+10. Perform appropriate security checks.
+11. Use Archify when architecture/documentation needs updating.
+12. Use Ponytail for engineering/code-quality review.
+13. Use Unslop for AI-code quality/refactoring review.
