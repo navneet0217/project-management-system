@@ -8,17 +8,17 @@ import AppLayout from './layouts/AppLayout'
 import { BRAND } from './lib/brand'
 
 // Pages load on demand, so the first screen downloads far less JavaScript.
-const Login = lazy(() => import('./pages/Login'))
-const Signup = lazy(() => import('./pages/Signup'))
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
-const ResetPassword = lazy(() => import('./pages/ResetPassword'))
-const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Projects = lazy(() => import('./pages/Projects'))
-const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
-const MyTasks = lazy(() => import('./pages/MyTasks'))
-const Tasks = lazy(() => import('./pages/Tasks'))
-const Users = lazy(() => import('./pages/Users'))
+const Login = lazy(() => import('./modules/auth/pages/Login'))
+const Signup = lazy(() => import('./modules/auth/pages/Signup'))
+const ForgotPassword = lazy(() => import('./modules/auth/pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./modules/auth/pages/ResetPassword'))
+const VerifyEmail = lazy(() => import('./modules/auth/pages/VerifyEmail'))
+const Dashboard = lazy(() => import('./modules/dashboard/pages/Dashboard'))
+const Projects = lazy(() => import('./modules/projects/pages/Projects'))
+const ProjectDetail = lazy(() => import('./modules/projects/pages/ProjectDetail'))
+const MyTasks = lazy(() => import('./modules/tasks/pages/MyTasks'))
+const Tasks = lazy(() => import('./modules/tasks/pages/Tasks'))
+const Users = lazy(() => import('./modules/users/pages/Users'))
 
 function ThemedBody({ dark }: { dark: boolean }) {
   const { token } = theme.useToken()

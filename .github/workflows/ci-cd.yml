@@ -27,6 +27,8 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: python -m pytest -q
+      - run: pip install pip-audit && pip-audit -r requirements.txt
+        continue-on-error: true
 
   frontend:
     name: Frontend (lint + build)
@@ -48,6 +50,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm build
+      - run: pnpm audit --prod
+        continue-on-error: true
 
   images:
     name: Build and push images (GHCR)

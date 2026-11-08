@@ -263,6 +263,38 @@ class AuthToken(Base):
     )
 
 
+class RoleRecord(Base):
+    """Roles as data, so a user can hold several (users.role stays the primary role)."""
+
+    __tablename__ = "roles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(30), unique=True)
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(60), unique=True)
+
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+    permission_id: Mapped[int] = mapped_column(
+        ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+
+
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 

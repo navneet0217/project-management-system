@@ -1,4 +1,4 @@
-import type { TaskListParams } from '../api/tasks'
+import type { TaskListParams } from '../modules/tasks/api'
 import type { Sort } from '../hooks/useSort'
 import { PRIORITIES, TASK_STATUSES } from './options'
 import type { Priority, TaskStatus } from '../types'

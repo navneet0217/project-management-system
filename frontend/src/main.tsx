@@ -4,7 +4,7 @@ import { Provider } from 'react-redux'
 import './index.css'
 import App from './App'
 import { store } from './store'
-import { clearAuth, restoreSession, setAccessToken } from './store/authSlice'
+import { clearAuth, restoreSession, setAccessToken } from './modules/auth/authSlice'
 import { injectAuthBridge } from './api/axios'
 
 injectAuthBridge({

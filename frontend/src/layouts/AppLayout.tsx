@@ -13,7 +13,7 @@ import {
   TeamOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons'
-import { logout } from '../store/authSlice'
+import { logout } from '../modules/auth/authSlice'
 import { setSiderCollapsed, toggleDarkMode } from '../store/uiSlice'
 import { useAppDispatch, useAppSelector } from '../store'
 import { StatusTag } from '../components/StatusTag'
