@@ -118,6 +118,8 @@ jobs:
             'MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}',
             'SECRET_KEY=${{ secrets.SECRET_KEY }}',
             'CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}',
+            'RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}',
+            'APP_URL=${{ secrets.APP_URL }}',
             "GHCR_OWNER=$owner",
             'IMAGE_TAG=${{ github.sha }}'
           )
