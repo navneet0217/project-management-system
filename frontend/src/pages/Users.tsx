@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { App, Button, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd'
-import { EyeOutlined, PlusOutlined } from '@ant-design/icons'
+import { App, Button, Form, Input, Modal, Segmented, Select, Space, Switch, Table, Tag, Typography } from 'antd'
+import { DeleteOutlined, EyeOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import SearchInput from '../components/SearchInput'
 import UserProfileModal from '../components/UserProfileModal'
@@ -16,7 +16,7 @@ import { useAppSelector } from '../store'
 import { PageHeaderRow } from '../components/PageHeaderRow'
 import { StatusTag } from '../components/StatusTag'
 import { ROLES, toOptions } from '../lib/options'
-import type { Page, ProjectRef, Role, UserListItem } from '../types'
+import type { Page, ProjectRef, Role, UserListItem, UserOption } from '../types'
 
 const PASSWORD_RULE = {
   min: 8,
@@ -34,6 +34,7 @@ export default function Users() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<Role | undefined>()
+  const [view, setView] = useState<'users' | 'removed'>('users')
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<UserListItem | 'new' | null>(null)
   const [saving, setSaving] = useState(false)
@@ -48,6 +49,7 @@ export default function Users() {
         await usersApi.list({
           search: search || undefined,
           role,
+          removed: view === 'removed',
           sort_by: sort.field,
           order: sort.order,
           page,
@@ -57,7 +59,7 @@ export default function Users() {
     } finally {
       setLoading(false)
     }
-  }, [search, role, sort, page])
+  }, [search, role, view, sort, page])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -116,6 +118,35 @@ export default function Users() {
     })
   }
 
+  const removeUser = (u: UserListItem) =>
+    modal.confirm({
+      title: `Remove ${u.full_name}?`,
+      content:
+        'They will be hidden from the user list and signed out. Their tasks and activity history are kept, and you can restore them later from the Removed view.',
+      okText: 'Remove',
+      okButtonProps: { danger: true },
+      centered: true,
+      onOk: async () => {
+        try {
+          await usersApi.remove(u.id)
+          message.success(`${u.full_name} was removed`)
+          load()
+        } catch {
+          // the axios interceptor already showed the error (for example: still manages an active project)
+        }
+      },
+    })
+
+  const restoreUser = async (u: UserListItem) => {
+    try {
+      await usersApi.restore(u.id)
+      message.success(`${u.full_name} was restored (inactive until you activate them)`)
+      load()
+    } catch {
+      // the axios interceptor already showed the error
+    }
+  }
+
   return (
     <>
       <PageHeaderRow
@@ -127,6 +158,17 @@ export default function Users() {
         }
       />
       <Space style={{ marginBottom: 16 }} wrap>
+        <Segmented
+          value={view}
+          onChange={(v) => {
+            setView(v as 'users' | 'removed')
+            setPage(1)
+          }}
+          options={[
+            { value: 'users', label: 'Users' },
+            { value: 'removed', label: 'Removed' },
+          ]}
+        />
         <SearchInput
           placeholder="Search name or email"
           onSearch={(v) => {
@@ -189,6 +231,20 @@ export default function Users() {
               ),
           },
           {
+            title: 'Manager',
+            dataIndex: 'managers',
+            render: (managers: UserOption[]) =>
+              managers.length ? (
+                <div className="chip-row">
+                  {managers.map((m) => (
+                    <Tag key={m.id}>{m.full_name}</Tag>
+                  ))}
+                </div>
+              ) : (
+                <Typography.Text type="secondary">-</Typography.Text>
+              ),
+          },
+          {
             title: 'Created',
             dataIndex: 'created_at',
             ...sortProps('created_at'),
@@ -197,26 +253,42 @@ export default function Users() {
           {
             title: 'Actions',
             key: 'actions',
-            render: (_, u) => (
-              <Space size="small" wrap>
-                <Button size="small" onClick={() => openModal(u)}>
-                  Edit
-                </Button>
-                <Switch
-                  size="small"
-                  checked={u.is_active}
-                  loading={togglingId === u.id}
-                  disabled={u.id === me.id}
-                  checkedChildren="Active"
-                  unCheckedChildren="Inactive"
-                  onChange={(checked) => toggle(u, checked)}
-                  title={u.id === me.id ? 'You cannot deactivate your own account' : undefined}
-                />
-                <Button size="small" icon={<EyeOutlined />} onClick={() => setProfileId(u.id)}>
-                  View profile
-                </Button>
-              </Space>
-            ),
+            fixed: 'right',
+            render: (_, u) =>
+              u.deleted_at ? (
+                <Space size="small" wrap>
+                  <Button size="small" icon={<EyeOutlined />} onClick={() => setProfileId(u.id)}>
+                    View profile
+                  </Button>
+                  <Button size="small" type="primary" ghost icon={<UndoOutlined />} onClick={() => restoreUser(u)}>
+                    Restore
+                  </Button>
+                </Space>
+              ) : (
+                <Space size="small" wrap>
+                  <Button size="small" onClick={() => openModal(u)}>
+                    Edit
+                  </Button>
+                  <Switch
+                    size="small"
+                    checked={u.is_active}
+                    loading={togglingId === u.id}
+                    disabled={u.id === me.id}
+                    checkedChildren="Active"
+                    unCheckedChildren="Inactive"
+                    onChange={(checked) => toggle(u, checked)}
+                    title={u.id === me.id ? 'You cannot deactivate your own account' : undefined}
+                  />
+                  <Button size="small" icon={<EyeOutlined />} onClick={() => setProfileId(u.id)}>
+                    View profile
+                  </Button>
+                  {u.id !== me.id && (
+                    <Button size="small" danger icon={<DeleteOutlined />} onClick={() => removeUser(u)}>
+                      Remove
+                    </Button>
+                  )}
+                </Space>
+              ),
           },
         ]}
       />

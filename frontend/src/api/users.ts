@@ -7,6 +7,7 @@ export interface UserListParams {
   search?: string
   role?: Role
   is_active?: boolean
+  removed?: boolean
   sort_by?: UserSortField
   order?: 'asc' | 'desc'
   page?: number
@@ -30,6 +31,8 @@ export interface UserUpdatePayload {
 export const usersApi = {
   list: (params: UserListParams) =>
     api.get<Page<UserListItem>>('/users', { params }).then((r) => r.data),
+  remove: (id: number) => api.delete(`/users/${id}`),
+  restore: (id: number) => api.post<User>(`/users/${id}/restore`).then((r) => r.data),
   profile: (id: number) => api.get<UserProfile>(`/users/${id}/profile`).then((r) => r.data),
   create: (data: UserCreatePayload) => api.post<User>('/users', data).then((r) => r.data),
   update: (id: number, data: UserUpdatePayload) =>

@@ -130,6 +130,8 @@ export interface ProjectRef {
 
 export interface UserListItem extends User {
   projects: ProjectRef[]
+  managers: UserOption[]
+  deleted_at: string | null
 }
 
 export interface ProfileProject extends ProjectRef {
@@ -137,6 +139,7 @@ export interface ProfileProject extends ProjectRef {
 }
 
 export type AuditAction =
+  | 'PROJECT_CREATED'
   | 'PROJECT_UPDATED'
   | 'TASK_CREATED'
   | 'TASK_UPDATED'

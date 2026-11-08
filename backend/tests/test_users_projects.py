@@ -175,3 +175,81 @@ def test_profile_access_rules(client, world):
     assert client.get(f"/api/v1/users/{world.admin.id}/profile", headers=auth(world.m1)).status_code == 403
     assert client.get("/api/v1/users/99999/profile", headers=auth(world.admin)).status_code == 404
     assert client.get(f"/api/v1/users/{world.dev1.id}/profile").status_code == 401
+
+
+def _remove(client, actor, user):
+    return client.delete(f"/api/v1/users/{user.id}", headers=auth(actor))
+
+
+def _emails(client, actor, **params):
+    res = client.get("/api/v1/users", params={"size": 100, **params}, headers=auth(actor))
+    assert res.status_code == 200
+    return {u["email"] for u in res.json()["items"]}
+
+
+def test_remove_user_is_soft_and_hides_them(client, world):
+    assert _remove(client, world.admin, world.dev3).status_code == 204
+    assert "dev3@test.dev" not in _emails(client, world.admin)  # hidden from the normal list
+    assert "dev3@test.dev" in _emails(client, world.admin, removed=True)  # visible in the Removed view
+    removed = next(u for u in client.get("/api/v1/users", params={"removed": True}, headers=auth(world.admin)).json()["items"])
+    assert removed["deleted_at"] is not None and removed["is_active"] is False
+    assert client.get(f"/api/v1/users/{world.dev3.id}", headers=auth(world.admin)).status_code == 200  # row still exists
+
+
+def test_removed_user_cannot_login_or_use_old_token(client, world):
+    token_before = client.post("/api/v1/auth/login", json={"email": "dev3@test.dev", "password": "Passw0rd1"}).json()
+    _remove(client, world.admin, world.dev3)
+    assert client.post("/api/v1/auth/login", json={"email": "dev3@test.dev", "password": "Passw0rd1"}).status_code == 403
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": token_before["refresh_token"]}).status_code == 401
+    assert client.get("/api/v1/auth/me", headers=auth(world.dev3)).status_code == 401  # access token dies too
+
+
+def test_remove_user_rules(client, world):
+    assert _remove(client, world.admin, world.admin).status_code == 400  # not yourself
+    assert _remove(client, world.dev1, world.dev2).status_code == 403  # admin only
+    assert _remove(client, world.m1, world.dev2).status_code == 403
+    assert client.delete("/api/v1/users/99999", headers=auth(world.admin)).status_code == 404
+    assert client.delete(f"/api/v1/users/{world.dev1.id}").status_code == 401
+    # m1 manages the active Project One: cannot be removed until it is reassigned or completed
+    res = _remove(client, world.admin, world.m1)
+    assert res.status_code == 409 and "active project" in res.json()["detail"]
+    assert "m1@test.dev" in _emails(client, world.admin)
+
+
+def test_removal_keeps_history_and_can_be_restored(client, world):
+    _remove(client, world.admin, world.dev1)  # dev1 has a task and is a member
+    profile = client.get(f"/api/v1/users/{world.dev1.id}/profile", headers=auth(world.admin)).json()
+    assert [t["title"] for t in profile["tasks"]] == ["First task"]  # history is intact
+    assert client.post(f"/api/v1/users/{world.dev1.id}/restore", headers=auth(world.admin)).status_code == 200
+    assert "dev1@test.dev" in _emails(client, world.admin)
+    # restored users stay inactive until an admin activates them
+    assert client.post("/api/v1/auth/login", json={"email": "dev1@test.dev", "password": "Passw0rd1"}).status_code == 403
+    assert client.patch(f"/api/v1/users/{world.dev1.id}", json={"is_active": True}, headers=auth(world.admin)).status_code == 200
+    assert client.post("/api/v1/auth/login", json={"email": "dev1@test.dev", "password": "Passw0rd1"}).status_code == 200
+
+
+def test_cannot_activate_a_removed_user_without_restoring(client, world):
+    _remove(client, world.admin, world.dev3)
+    res = client.patch(f"/api/v1/users/{world.dev3.id}", json={"is_active": True}, headers=auth(world.admin))
+    assert res.status_code == 400 and "Restore" in res.json()["detail"]
+
+
+def test_removed_users_are_not_offered_for_projects(client, world):
+    _remove(client, world.admin, world.dev3)
+    options = client.get("/api/v1/users/options", params={"role": "DEVELOPER"}, headers=auth(world.admin)).json()
+    assert world.dev3.id not in [u["id"] for u in options]
+
+
+def test_users_list_shows_managers_of_current_projects(client, world):
+    by_email = {u["email"]: u for u in client.get("/api/v1/users", headers=auth(world.admin)).json()["items"]}
+    assert [m["id"] for m in by_email["dev1@test.dev"]["managers"]] == [world.m1.id]
+    assert by_email["dev3@test.dev"]["managers"] == []  # not on any project
+    assert by_email["m1@test.dev"]["managers"] == []  # managers have no reporting manager here
+
+
+def test_creating_a_project_is_logged(client, world):
+    res = client.post("/api/v1/projects", json={"name": "Brand new project"}, headers=auth(world.m1))
+    assert res.status_code == 201
+    items = client.get(f"/api/v1/projects/{res.json()['id']}/activities", headers=auth(world.m1)).json()["items"]
+    assert [i["action"] for i in items] == ["PROJECT_CREATED"]
+    assert items[0]["entity_label"] == "Brand new project" and items[0]["actor"]["id"] == world.m1.id

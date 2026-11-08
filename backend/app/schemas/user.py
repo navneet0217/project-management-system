@@ -64,6 +64,8 @@ class ProjectRef(BaseModel):
 
 class UserListItem(UserOut):
     projects: list[ProjectRef] = []
+    managers: list[UserOption] = []  # who manages the projects this user works on
+    deleted_at: datetime | None = None  # set = soft-removed
 
 
 class UserCreate(BaseModel):

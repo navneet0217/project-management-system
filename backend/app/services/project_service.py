@@ -151,6 +151,11 @@ def create_project(db: Session, user: User, data: ProjectCreate) -> Project:
         manager_id=manager_id,
     )
     db.add(project)
+    db.flush()  # need the id for the activity entry
+    audit_service.record(
+        db, project_id=project.id, actor=user, action=AuditAction.PROJECT_CREATED, entity_type=AuditEntity.PROJECT,
+        entity_id=project.id, entity_label=project.name, new=project.name,
+    )
     db.commit()
     return get_viewable(db, user, project.id)
 

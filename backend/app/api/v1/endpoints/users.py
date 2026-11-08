@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -34,6 +34,7 @@ def list_users(
     search: str | None = Query(None, max_length=100),
     role: Role | None = None,
     is_active: bool | None = None,
+    removed: bool = False,  # true = show only removed (soft-deleted) users
     sort_by: str = "created_at",
     order: Literal["asc", "desc"] = "desc",
     page: int = Query(1, ge=1),
@@ -41,13 +42,24 @@ def list_users(
     db: Session = Depends(get_db),
     _: User = Depends(admin_only),
 ):
-    items, total = user_service.list_users(db, search, role, is_active, sort_by, order, page, size)
+    items, total = user_service.list_users(db, search, role, is_active, removed, sort_by, order, page, size)
     return Page[UserListItem](items=items, total=total, page=page, size=size)
 
 
 @router.post("", response_model=UserOut, status_code=201)
 def create_user(data: UserCreate, db: Session = Depends(get_db), _: User = Depends(admin_only)):
     return UserOut.model_validate(user_service.create_user(db, data))
+
+
+@router.delete("/{user_id}", status_code=204)
+def remove_user(user_id: int, db: Session = Depends(get_db), actor: User = Depends(admin_only)):
+    user_service.remove_user(db, actor, user_id)
+    return Response(status_code=204)
+
+
+@router.post("/{user_id}/restore", response_model=UserOut)
+def restore_user(user_id: int, db: Session = Depends(get_db), _: User = Depends(admin_only)):
+    return UserOut.model_validate(user_service.restore_user(db, user_id))
 
 
 @router.get("/{user_id}/profile", response_model=UserProfileOut)

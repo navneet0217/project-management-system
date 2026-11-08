@@ -25,6 +25,7 @@ export const CATEGORY_OPTIONS: { value: ActivityCategory | 'all'; label: string 
 export const ACTION_COLORS: Record<AuditAction, string> = {
   PROJECT_UPDATED: 'blue',
   TASK_CREATED: 'green',
+  PROJECT_CREATED: 'green',
   TASK_UPDATED: 'blue',
   TASK_DELETED: 'red',
   TASK_ASSIGNED: 'cyan',
@@ -57,6 +58,8 @@ export function describeActivity(a: ProjectActivity): ActivityView {
   const plain = { hasChange: false }
 
   switch (a.action) {
+    case 'PROJECT_CREATED':
+      return { summary: `created the project ${name === 'a task' ? '' : name}`.trim(), ...plain }
     case 'PROJECT_UPDATED':
       return { summary: `changed the project ${field}`, ...change }
     case 'TASK_CREATED':

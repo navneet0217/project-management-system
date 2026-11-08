@@ -18,10 +18,12 @@ if that fails, log out.
 ## Users (ADMIN only unless noted)
 | Method | Path | Notes |
 |---|---|---|
-| GET | /users | query: search, role, is_active, sort_by (full_name, email, role, is_active, created_at), order, page, size. Each user includes `projects` (current, not completed: as member or manager) |
+| GET | /users | query: search, role, is_active, removed (true = only soft-removed users), sort_by (full_name, email, role, is_active, created_at), order, page, size. Each user includes `projects` (current, not completed: as member or manager), `managers` (managers of the projects they work on) and `deleted_at`. Removed users are hidden unless `removed=true` |
 | POST | /users | `{email, full_name, password, role}` |
 | GET | /users/{id} | |
 | PATCH | /users/{id} | `{full_name?, role?, is_active?, password?}` (admin cannot deactivate/demote self) |
+| DELETE | /users/{id} | **Soft remove** (ADMIN): sets `deleted_at`, deactivates, revokes sessions; history is kept. 400 for yourself, 409 if they manage an active project |
+| POST | /users/{id}/restore | Undo a soft remove (ADMIN). The user stays inactive until activated |
 | GET | /users/options | ADMIN + MANAGER. Dropdown list of active users, query: role |
 | GET | /users/{id}/profile | ADMIN (anyone), MANAGER (developers only). `{user, managers, current_projects, past_projects, tasks, activity}`. Past = completed projects + projects the user was removed from |
 
@@ -69,6 +71,6 @@ admin@demo.dev | meera.manager@demo.dev | rohan.manager@demo.dev | dev.isha@demo
 
 ## Project activity (audit log)
 Stored in table `project_activities` (Alembic 0002). Written by `audit_service.record()` in the same transaction as the change.
-Actions: PROJECT_UPDATED, TASK_CREATED, TASK_UPDATED, TASK_DELETED, TASK_ASSIGNED, TASK_REASSIGNED, TASK_STATUS_CHANGED,
+Actions: PROJECT_CREATED, PROJECT_UPDATED, TASK_CREATED, TASK_UPDATED, TASK_DELETED, TASK_ASSIGNED, TASK_REASSIGNED, TASK_STATUS_CHANGED,
 TASK_PRIORITY_CHANGED, COMMENT_ADDED, MEMBER_ADDED, MEMBER_REMOVED. Entities: PROJECT, TASK, MEMBER, COMMENT.
 Timestamps are UTC without a timezone suffix; the frontend (`lib/dates.ts`) adds the `Z`.

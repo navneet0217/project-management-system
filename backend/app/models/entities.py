@@ -56,6 +56,7 @@ class ActivityType(str, enum.Enum):
 class AuditAction(str, enum.Enum):
     """What happened, for the project-level audit log."""
 
+    PROJECT_CREATED = "PROJECT_CREATED"
     PROJECT_UPDATED = "PROJECT_UPDATED"
     TASK_CREATED = "TASK_CREATED"
     TASK_UPDATED = "TASK_UPDATED"
@@ -90,6 +91,8 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255))
     role: Mapped[Role] = mapped_column(_enum(Role), index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    # Soft remove: the row stays (tasks, activity and history keep pointing at it) but the user is hidden and cannot log in.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP")
     )

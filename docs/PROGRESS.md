@@ -23,10 +23,11 @@ Rule: a feature is Done only after it was tested. Evidence = 66 backend tests + 
 | 30,34,35 | Login/logout, Argon2 hashing, JWT validation, refresh rotation + reuse detection | API test |
 | 37 | Login rate limit (429 after 20 tries/min per IP, in-memory) | API test |
 
+| 21,26 | **Phase 2 (2026-11-08):** Manager column, soft remove + restore (Alembic 0003 `users.deleted_at`), Removed view, `PROJECT_CREATED` in the activity log | 74 backend tests + 18 browser checks |
+
 ### Pending (verified missing by probing the API)
 - **Roles model (24, 25):** each user has ONE role column. No User/Role/Permission tables, no `/roles`.
-- **Users grid:** no Manager column, no remove-user (only deactivate).
-- **Activity:** `PROJECT_CREATED` is not logged. "Member role changed" does not exist (needs the roles model).
+- **Activity:** "Member role changed" does not exist (needs the roles model).
 - **Auth (31, 32, 33, 36, 41, 42):** no forgot-password, reset-password or email verification endpoints, no email service.
 - **Notifications (38):** no email on task updates.
 - **To Verify (40):** task comments work (API test); no edit/delete of comments.
