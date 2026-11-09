@@ -51,6 +51,9 @@ Out of scope (Version 2): WebSockets, email, password reset, multi-tenancy, adva
 ## Request flow
 Cloudflare Tunnel -> Nginx -> React static files, and /api -> FastAPI -> MySQL (private Docker network, never public)
 
+## Shared local/showcase data
+The Vite frontend on port 5173 proxies `/api` to Docker Nginx on port 8080, which uses the same backend/database as Cloudflare. Start Docker before using Vite. The Windows MySQL database and optional standalone backend on port 8000 are separate; edits there do not update Docker. After changing frontend/backend source, rebuild the Docker services to update the public app. Never remove the database volume to refresh application code.
+
 ## Git workflow
 main (stable) <- dev (integration) <- feature/* branches.
 CI must pass before merging into dev.

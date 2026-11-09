@@ -5,6 +5,7 @@ Use a local/test database. These checks create and change data. Mark each result
 ## Setup
 
 - Open your running app (Vite: http://localhost:5173; Docker: http://localhost:8080).
+- Start Docker first: Vite now sends `/api` to port 8080, so Vite, Docker and Cloudflare share the same database. Sign in separately on each origin. Source-code changes require a Docker rebuild to update 8080/public, even though Vite updates immediately.
 - Log in as `admin@demo.dev` using its current password. Confirm the name is Navneet Admin if the SQL rename was committed.
 - In Users, create one MANAGER and two DEVELOPER accounts using distinct test emails. Use an inbox you control for the password-reset test. Admin-created accounts can log in without email verification.
 - Use separate browser profiles/private sessions to demonstrate different users.

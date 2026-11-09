@@ -1,5 +1,11 @@
 # Progress Tracker
 
+## Shared showcase environment (2026-11-09)
+- With user approval, backed up Windows and Docker MySQL to `%LOCALAPPDATA%/Tasklane/backups/20261109-132211/`, then replaced Docker `pms` with the Windows snapshot. Windows MySQL was not changed.
+- Rebuilt backend and web from current workspace source and ran `alembic upgrade head`. Production frontend build and Vite configuration typecheck passed.
+- Vite now proxies `/api` to `http://localhost:8080`. Ports 5173 and 8080 plus the current Cloudflare URL use the same Docker backend/database; all three health checks returned 200. Counts and checksums match for all 12 business/schema tables (4 users, 2 projects, 4 tasks); transient authentication-token tables were excluded from the comparison.
+- Use Docker as the data source going forward. The standalone Windows backend on port 8000 and Windows MySQL remain separate and are no longer used by Vite. Sign out and sign in again on each origin after the switch. Vite source edits still require a Docker rebuild to appear on 8080/public.
+
 ## Manual showcase checklist (2026-11-09)
 - Added `docs/MANUAL_TESTS.md` with user-run scenarios and local password-reset instructions; manual results remain Not Tested.
 - Multi-role assignment is implemented across user Add/Edit, responses, filtering, profiles, navigation, project/task authorization, assignment and dashboard scoping. Schema uses existing migration 0005; run `alembic upgrade head` before deploying if necessary. Legacy `role` remains a compatibility field; role links control combined access. Manual/browser verification remains pending.
@@ -70,7 +76,7 @@ Rule: a feature is Done only after it was tested. Evidence = 66 backend tests + 
 ## Frontend stack (rewritten)
 React + Vite + TypeScript, **Redux Toolkit** (auth + UI slices in `src/store`), **Ant Design** (UI, dark mode via `ConfigProvider`), React Router, Axios, Recharts. Tailwind, Zustand and react-hot-toast were removed.
 Day 5 pages built: login, dashboard, projects (+detail with members, tasks, comments/activity drawer), my tasks, users (ADMIN). `pnpm build` passes; not yet tested end-to-end against the running backend.
-Run from `frontend/`: `pnpm install`, `pnpm dev` (proxies /api to localhost:8000).
+Run from `frontend/`: `pnpm install`, `pnpm dev` (proxies /api to Docker on localhost:8080; start the Docker stack first).
 
 ## Done
 - [x] Monorepo structure, .gitignore, .env.example files, docker-compose.dev.yml (MySQL)
