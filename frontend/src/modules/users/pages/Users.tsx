@@ -12,7 +12,8 @@ import {
 } from '../api'
 import { useSort } from '../../../hooks/useSort'
 import { formatDate } from '../../../lib/dates'
-import { useAppSelector } from '../../../store'
+import { useAppDispatch, useAppSelector } from '../../../store'
+import { restoreSession } from '../../auth/authSlice'
 import { PageHeaderRow } from '../../../components/PageHeaderRow'
 import { StatusTag } from '../../../components/StatusTag'
 import { ROLES, toOptions } from '../../../lib/options'
@@ -29,6 +30,7 @@ const DEFAULT_SORT = { field: 'created_at', order: 'desc' } as const
 export default function Users() {
   const { message, modal } = App.useApp()
   const me = useAppSelector((s) => s.auth.user)!
+  const dispatch = useAppDispatch()
   const { sort, sortProps, onTableChange } = useSort<UserSortField>(SORT_FIELDS, DEFAULT_SORT)
   const [data, setData] = useState<Page<UserListItem> | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,7 +70,7 @@ export default function Users() {
 
   const openModal = (u: UserListItem | 'new') => {
     form.resetFields()
-    if (u !== 'new') form.setFieldsValue(u)
+    if (u !== 'new') form.setFieldsValue({ ...u, roles: u.roles ?? [u.role] })
     setEditing(u)
   }
 
@@ -82,6 +84,7 @@ export default function Users() {
         const payload = { ...values } as UserUpdatePayload
         if (!payload.password) delete payload.password
         await usersApi.update(editing.id, payload)
+        if (editing.id === me.id) await dispatch(restoreSession())
         message.success('User updated')
       }
       setEditing(null)
@@ -203,10 +206,14 @@ export default function Users() {
           { title: 'Name', dataIndex: 'full_name', ...sortProps('full_name') },
           { title: 'Email', dataIndex: 'email', ...sortProps('email') },
           {
-            title: 'Role',
-            dataIndex: 'role',
+            title: 'Roles',
+            dataIndex: 'roles',
             ...sortProps('role'),
-            render: (r: Role) => <StatusTag value={r} />,
+            render: (roles: Role[], user: UserListItem) => (
+              <Space size={4} wrap>
+                {(roles ?? [user.role]).map((role) => <StatusTag key={role} value={role} />)}
+              </Space>
+            ),
           },
           {
             title: 'Status',
@@ -302,7 +309,7 @@ export default function Users() {
         centered
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" onFinish={submit} initialValues={{ role: 'DEVELOPER' }}>
+        <Form form={form} layout="vertical" onFinish={submit} initialValues={{ roles: ['DEVELOPER'] }}>
           {editing === 'new' && (
             <Form.Item
               name="email"
@@ -315,10 +322,10 @@ export default function Users() {
           <Form.Item name="full_name" label="Full name" rules={[{ required: true, min: 2, max: 120 }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+          <Form.Item name="roles" label="Roles" rules={[{ required: true, type: 'array', min: 1 }]}>
             <Select
+              mode="multiple"
               options={toOptions(ROLES)}
-              disabled={editing !== 'new' && editing?.id === me.id}
             />
           </Form.Item>
           <Form.Item

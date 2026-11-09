@@ -12,6 +12,7 @@ import type {
 export interface ProjectListParams {
   search?: string
   status?: ProjectStatus
+  member_only?: boolean
   page?: number
   size?: number
 }

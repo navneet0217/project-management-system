@@ -1,3 +1,7 @@
+import type { Role, UserOption } from '../types'
+
+export const hasRole = (user: UserOption, role: Role) => (user.roles ?? [user.role]).includes(role)
+
 export const PROJECT_STATUSES = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED'] as const
 export const TASK_STATUSES = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'] as const
 export const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const

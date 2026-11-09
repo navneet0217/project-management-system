@@ -95,6 +95,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(120))
     hashed_password: Mapped[str] = mapped_column(String(255))
     role: Mapped[Role] = mapped_column(_enum(Role), index=True)
+    role_records: Mapped[list[RoleRecord]] = relationship(secondary="user_roles", lazy="selectin")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
     # Soft remove: the row stays (tasks, activity and history keep pointing at it) but the user is hidden and cannot log in.
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
@@ -106,6 +107,21 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow, server_default=text("CURRENT_TIMESTAMP")
     )
+
+
+    @property
+    def roles(self) -> list[Role]:
+        assigned = {Role(record.name) for record in self.role_records} or {self.role}
+        return [role for role in Role if role in assigned]
+
+    def has_role(self, role: Role) -> bool:
+        return role in self.roles
+
+    @classmethod
+    def with_role(cls, role: Role):
+        return cls.role_records.any(RoleRecord.name == role.value) | (
+            ~cls.role_records.any() & (cls.role == role)
+        )
 
 
 class Project(Base):

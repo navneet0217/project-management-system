@@ -26,6 +26,90 @@ def test_admin_cannot_deactivate_self(client, world):
     assert res.status_code == 400
 
 
+def test_admin_assigns_multiple_roles_and_filters_secondary_role(client, world):
+    res = client.patch(
+        f"/api/v1/users/{world.dev3.id}",
+        json={"roles": ["MANAGER", "DEVELOPER"]}, headers=auth(world.admin),
+    )
+    assert res.status_code == 200
+    assert res.json()["roles"] == ["MANAGER", "DEVELOPER"]
+    assert res.json()["role"] == "MANAGER"
+    items = client.get("/api/v1/users", params={"role": "DEVELOPER"}, headers=auth(world.admin)).json()["items"]
+    assert world.dev3.id in [user["id"] for user in items]
+
+
+def test_role_assignment_validation_and_self_protection(client, world):
+    url = f"/api/v1/users/{world.admin.id}"
+    assert client.patch(url, json={"roles": []}, headers=auth(world.admin)).status_code == 422
+    assert client.patch(url, json={"roles": ["MANAGER"]}, headers=auth(world.admin)).status_code == 400
+    assert client.patch(url, json={"roles": ["UNKNOWN"]}, headers=auth(world.admin)).status_code == 422
+    assert client.patch(url, json={"roles": ["ADMIN"]}, headers=auth(world.dev1)).status_code == 403
+
+
+def test_multi_role_manager_works_as_developer_without_cross_project_management(client, world):
+    admin = auth(world.admin)
+    manager = auth(world.m2)
+    res = client.patch(
+        f"/api/v1/users/{world.m2.id}", json={"roles": ["MANAGER", "DEVELOPER"]}, headers=admin,
+    )
+    assert res.status_code == 200
+    options = client.get("/api/v1/users/options", params={"role": "DEVELOPER"}, headers=admin).json()
+    assert world.m2.id in [user["id"] for user in options]
+    assert client.post(
+        f"/api/v1/projects/{world.p1.id}/members", json={"user_id": world.m2.id}, headers=auth(world.m1),
+    ).status_code == 201
+    assert client.get(f"/api/v1/users/{world.m2.id}/profile", headers=auth(world.m1)).status_code == 200
+    projects = client.get("/api/v1/projects", headers=manager).json()["items"]
+    assert {project["id"] for project in projects} == {world.p1.id, world.p2.id}
+    member_projects = client.get("/api/v1/projects", params={"member_only": True}, headers=manager).json()["items"]
+    assert [project["id"] for project in member_projects] == [world.p1.id]
+    assert client.patch(
+        f"/api/v1/projects/{world.p1.id}", json={"name": "Forbidden"}, headers=manager,
+    ).status_code == 403
+    created = client.post(
+        f"/api/v1/projects/{world.p1.id}/tasks", json={"title": "Own developer task"}, headers=manager,
+    )
+    assert created.status_code == 201 and created.json()["assignee"]["id"] == world.m2.id
+    assert client.post(
+        f"/api/v1/projects/{world.p1.id}/tasks",
+        json={"title": "Cannot assign others", "assignee_id": world.dev1.id}, headers=manager,
+    ).status_code == 403
+    task_id = created.json()["id"]
+    assert client.patch(f"/api/v1/tasks/{task_id}", json={"priority": "HIGH"}, headers=manager).status_code == 200
+    tasks = client.get("/api/v1/tasks", headers=manager).json()["items"]
+    assert [task["id"] for task in tasks] == [task_id]
+    dashboard = client.get("/api/v1/dashboard", headers=manager).json()
+    assert dashboard["summary"]["total_tasks"] == 1
+    assert {project["id"] for project in dashboard["projects"]} == {world.p1.id, world.p2.id}
+
+
+def test_multi_role_admin_can_assign_and_revoke_roles_immediately(client, world):
+    url = f"/api/v1/users/{world.dev3.id}"
+    old_token = auth(world.dev3)
+    assert client.patch(url, json={"roles": ["ADMIN", "DEVELOPER"]}, headers=auth(world.admin)).status_code == 200
+    assert client.get("/api/v1/users", headers=old_token).status_code == 200
+    assert client.patch(url, json={"roles": ["DEVELOPER"]}, headers=auth(world.admin)).status_code == 200
+    assert client.get("/api/v1/users", headers=old_token).status_code == 403
+
+
+def test_multi_role_manager_member_allocation_is_not_duplicated(client, world):
+    admin = auth(world.admin)
+    assert client.patch(
+        f"/api/v1/users/{world.m1.id}", json={"roles": ["MANAGER", "DEVELOPER"]}, headers=admin,
+    ).status_code == 200
+    assert client.post(
+        f"/api/v1/projects/{world.p1.id}/members", json={"user_id": world.m1.id}, headers=admin,
+    ).status_code == 201
+    users = client.get("/api/v1/users", headers=admin).json()["items"]
+    manager = next(user for user in users if user["id"] == world.m1.id)
+    assert [project["id"] for project in manager["projects"]] == [world.p1.id]
+    assert manager["managers"] == []
+    profile = client.get(f"/api/v1/users/{world.m1.id}/profile", headers=admin).json()
+    assert len(profile["current_projects"]) == 1
+    assert profile["current_projects"][0]["relation"] == "Manager"
+    assert profile["managers"] == []
+
+
 def test_manager_sees_only_own_projects(client, world):
     res = client.get("/api/v1/projects", headers=auth(world.m1))
     assert [p["name"] for p in res.json()["items"]] == ["Project One"]

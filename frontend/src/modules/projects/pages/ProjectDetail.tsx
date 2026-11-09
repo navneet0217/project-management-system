@@ -14,6 +14,7 @@ import TaskListTab from '../components/TaskListTab'
 import TaskDrawer from '../../tasks/components/TaskDrawer'
 import TaskFormModal from '../../tasks/components/TaskFormModal'
 import type { Task } from '../../../types'
+import { hasRole } from '../../../lib/options'
 
 export default function ProjectDetail() {
   const projectId = Number(useParams().id)
@@ -33,7 +34,8 @@ export default function ProjectDetail() {
   const [drawerTask, setDrawerTask] = useState<Task | null>(null)
 
   const p = project.data
-  const canManage = !!p && (me.role === 'ADMIN' || p.manager?.id === me.id)
+  const canManage = !!p && (hasRole(me, 'ADMIN') || (hasRole(me, 'MANAGER') && p.manager?.id === me.id))
+  const canCreateTask = canManage || (hasRole(me, 'DEVELOPER') && !!members.data?.some((member) => member.id === me.id))
   const canMove = (t: Task) => canManage || t.assignee?.id === me.id
 
   const refresh = () => {
@@ -56,7 +58,7 @@ export default function ProjectDetail() {
               <Card
                 className="soft-card"
                 extra={
-                  canManage && (
+                  canCreateTask && (
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
@@ -132,6 +134,7 @@ export default function ProjectDetail() {
 
           <TaskFormModal
             open={taskModal.open}
+            mode={canManage ? 'manage' : 'self'}
             projectId={projectId}
             task={taskModal.task}
             members={members.data ?? []}

@@ -26,13 +26,17 @@ if that fails, log out.
 | Method | Path | Notes |
 |---|---|---|
 | GET | /users | query: search, role, is_active, removed (true = only soft-removed users), sort_by (full_name, email, role, is_active, created_at), order, page, size. Each user includes `projects` (current, not completed: as member or manager), `managers` (managers of the projects they work on) and `deleted_at`. Removed users are hidden unless `removed=true` |
-| POST | /users | `{email, full_name, password, role}` |
+| POST | /users | `{email, full_name, password, roles}`; `roles` is a nonempty array of ADMIN, MANAGER, DEVELOPER |
 | GET | /users/{id} | |
-| PATCH | /users/{id} | `{full_name?, role?, is_active?, password?}` (admin cannot deactivate/demote self) |
+| PATCH | /users/{id} | `{full_name?, roles?, is_active?, password?}`; roles replaces the assigned set (admin cannot deactivate self or remove their own ADMIN role) |
 | DELETE | /users/{id} | **Soft remove** (ADMIN): sets `deleted_at`, deactivates, revokes sessions; history is kept. 400 for yourself, 409 if they manage an active project |
 | POST | /users/{id}/restore | Undo a soft remove (ADMIN). The user stays inactive until activated |
 | GET | /users/options | ADMIN + MANAGER. Dropdown list of active users, query: role |
 | GET | /users/{id}/profile | ADMIN (anyone), MANAGER (developers only). `{user, managers, current_projects, past_projects, tasks, activity}`. Past = completed projects + projects the user was removed from |
+
+User responses include `roles`. Role filters and user options match any assigned role. The legacy `role` input still replaces assignments with one role; when both inputs are supplied, `roles` takes precedence. Output `role` is the highest assigned role (ADMIN, then MANAGER, then DEVELOPER), retained for dashboard/client compatibility. Assignment records in `user_roles` control authorization; records with no links fall back to the legacy role until assigned through the API. Only ADMIN can grant roles; public signup always creates a DEVELOPER.
+
+A MANAGER + DEVELOPER sees managed projects plus member projects, and managed tasks plus personally assigned tasks. They can manage only their own projects; elsewhere developer restrictions apply. ADMIN permissions take precedence. `GET /projects?member_only=true` limits the result to actual memberships for the My Tasks project picker.
 
 ## Projects
 | Method | Path | Who | Notes |
@@ -75,6 +79,12 @@ GET /health -> `{"status":"ok"}` (checks the database)
 
 ## Demo logins (after `python -m app.seed`, password `Demo@12345`)
 admin@demo.dev | meera.manager@demo.dev | rohan.manager@demo.dev | dev.isha@demo.dev (also dev.kabir, dev.neha, dev.arjun @demo.dev)
+
+## Local email delivery
+
+Set `RESEND_API_KEY`, `EMAIL_FROM`, and `APP_URL` in the root `.env`. Local Uvicorn reads this first, then `backend/.env`; backend values override root values (including an explicitly empty key). Process environment variables take precedence over both. Docker Compose passes root settings into the container. Restart the backend after changes; for changed Compose environment values, recreate it (`docker compose up -d --force-recreate backend` from the repository root). `APP_URL` must be the frontend origin, usually `http://localhost:5173` for Vite or `http://localhost:8080` for Docker.
+
+Gmail and other valid addresses use the same flow: signup verifies inbox ownership, while admin-created users are already trusted. A Gmail-looking address alone does not prove that the inbox exists. Resend's sandbox sender only delivers to the account owner's address; verify a sender domain and use its sender address to deliver to arbitrary registered users. No key means console-only email. Forgot-password confirmation does not guarantee delivery: inspect backend logs for provider errors. Task allocation, updates, comments and membership changes use the same provider after successful commit, excluding the actor and inactive/unverified recipients.
 
 ## Project activity (audit log)
 Stored in table `project_activities` (Alembic 0002). Written by `audit_service.record()` in the same transaction as the change.

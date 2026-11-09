@@ -19,12 +19,13 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 def list_projects(
     search: str | None = Query(None, max_length=100),
     status: ProjectStatus | None = None,
+    member_only: bool = False,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    items, total = project_service.list_projects(db, user, search, status, page, size)
+    items, total = project_service.list_projects(db, user, search, status, page, size, member_only)
     return Page[ProjectOut](items=items, total=total, page=page, size=size)
 
 

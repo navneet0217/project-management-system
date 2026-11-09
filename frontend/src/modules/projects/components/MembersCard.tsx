@@ -77,7 +77,7 @@ export default function MembersCard({
             <List.Item.Meta
               avatar={<Avatar style={{ background: BRAND }}>{m.full_name.charAt(0)}</Avatar>}
               title={m.full_name}
-              description={<Tag>{m.role}</Tag>}
+              description={(m.roles ?? [m.role]).map((role) => <Tag key={role}>{role}</Tag>)}
             />
           </List.Item>
         )}

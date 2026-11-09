@@ -1,5 +1,5 @@
 
-from sqlalchemy import func, select
+from sqlalchemy import false, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.exceptions import BadRequest, Conflict, Forbidden, NotFound
@@ -24,17 +24,20 @@ from app.services import audit_service
 def _scope(user: User):
     """One place that decides which projects a user can see (used by lists AND single lookups)."""
     stmt = select(Project)
-    if user.role == Role.ADMIN:
+    if user.has_role(Role.ADMIN):
         return stmt
-    if user.role == Role.MANAGER:
-        return stmt.where(Project.manager_id == user.id)
-    return stmt.join(ProjectMember, ProjectMember.project_id == Project.id).where(
-        ProjectMember.user_id == user.id
-    )
+    condition = false()
+    if user.has_role(Role.MANAGER):
+        condition = condition | (Project.manager_id == user.id)
+    if user.has_role(Role.DEVELOPER):
+        condition = condition | Project.id.in_(
+            select(ProjectMember.project_id).where(ProjectMember.user_id == user.id)
+        )
+    return stmt.where(condition)
 
 
 def can_manage(user: User, project: Project) -> bool:
-    return user.role == Role.ADMIN or (user.role == Role.MANAGER and project.manager_id == user.id)
+    return user.has_role(Role.ADMIN) or (user.has_role(Role.MANAGER) and project.manager_id == user.id)
 
 
 def get_viewable(db: Session, user: User, project_id: int) -> Project:
@@ -101,9 +104,12 @@ def serialize(db: Session, projects: list[Project]) -> list[ProjectOut]:
 
 
 def list_projects(
-    db: Session, user: User, search: str | None, status: ProjectStatus | None, page: int, size: int
+    db: Session, user: User, search: str | None, status: ProjectStatus | None, page: int, size: int,
+    member_only: bool = False,
 ) -> tuple[list[ProjectOut], int]:
     stmt = _scope(user)
+    if member_only:
+        stmt = stmt.where(Project.id.in_(select(ProjectMember.project_id).where(ProjectMember.user_id == user.id)))
     if search:
         # Matches project name, description or the manager's name (scoping above still applies).
         like = f"%{search.strip()}%"
@@ -129,12 +135,12 @@ def list_projects(
 
 def _validate_manager(db: Session, manager_id: int) -> None:
     manager = db.get(User, manager_id)
-    if not manager or not manager.is_active or manager.role != Role.MANAGER:
+    if not manager or not manager.is_active or manager.deleted_at or not manager.has_role(Role.MANAGER):
         raise BadRequest("manager_id must be an active user with the MANAGER role")
 
 
 def create_project(db: Session, user: User, data: ProjectCreate) -> Project:
-    if user.role == Role.MANAGER:
+    if user.has_role(Role.MANAGER) and not user.has_role(Role.ADMIN):
         if data.manager_id not in (None, user.id):
             raise Forbidden("Managers can only create projects that they manage themselves")
         manager_id = user.id
@@ -164,7 +170,7 @@ def update_project(db: Session, user: User, project_id: int, data: ProjectUpdate
     project = get_manageable(db, user, project_id)
     changes = data.model_dump(exclude_unset=True)
     if "manager_id" in changes:
-        if user.role != Role.ADMIN:
+        if not user.has_role(Role.ADMIN):
             raise Forbidden("Only an admin can change the project manager")
         if changes["manager_id"] is not None:
             _validate_manager(db, changes["manager_id"])
@@ -228,7 +234,7 @@ def add_member(db: Session, user: User, project_id: int, member_id: int) -> list
         raise NotFound("User not found")
     if not member.is_active:
         raise BadRequest("Inactive users cannot be added to a project")
-    if member.role != Role.DEVELOPER:
+    if not member.has_role(Role.DEVELOPER):
         raise BadRequest("Only developers can be added as project members")
     if db.get(ProjectMember, (project.id, member.id)):
         raise Conflict("User is already a member of this project")

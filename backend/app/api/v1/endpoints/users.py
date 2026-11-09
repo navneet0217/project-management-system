@@ -25,7 +25,7 @@ def user_options(
     """Small dropdown list (active users). Managers use it to pick developers and managers."""
     stmt = select(User).where(User.is_active.is_(True)).order_by(User.full_name)
     if role:
-        stmt = stmt.where(User.role == role)
+        stmt = stmt.where(User.with_role(role))
     return [UserOption.model_validate(u) for u in db.scalars(stmt).all()]
 
 

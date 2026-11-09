@@ -24,7 +24,7 @@ def get_current_user(
         raise Unauthorized("Invalid or expired token") from None
     user = db.get(User, user_id)
     # Re-checked on every request, so deactivating a user takes effect immediately.
-    if not user or not user.is_active:
+    if not user or not user.is_active or user.deleted_at:
         raise Unauthorized("Account not found or deactivated")
     return user
 
@@ -33,7 +33,7 @@ def require_roles(*roles: Role):
     """Dependency factory: `Depends(require_roles(Role.ADMIN))` blocks everyone else with 403."""
 
     def checker(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
+        if not any(user.has_role(role) for role in roles):
             raise Forbidden()
         return user
 

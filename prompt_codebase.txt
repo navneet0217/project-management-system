@@ -137,8 +137,8 @@ Remove the role-name capsule currently displayed around/above the KPI cards.
 21| User management (add, view, edit and remove users)| Pending
 22| Role-Based Access Control (RBAC)| Pending
 23| Role-based dashboards, navigation and permissions| Pending
-24| Multiple users assigned to same role| Pending
-25| Multiple roles assigned to single user| Pending
+24| Multiple users assigned to same role| To Verify
+25| Multiple roles assigned to single user| To Verify
 26| User active/inactive control| Pending
 27| Detailed user profile| Pending
 28| Current project allocation display| Pending
@@ -340,12 +340,12 @@ Adding the member should:
 
 #| Feature| Status
 30| Secure login and logout| To Verify
-31| Forgot password functionality| Pending
-32| Password reset through email verification link| Pending
-33| Email verification for newly registered users| Pending
+31| Forgot password functionality| To Verify
+32| Password reset through email verification link| To Verify
+33| Email verification for newly registered users| To Verify
 34| Secure password hashing| To Verify
 35| JWT validation| To Verify
-36| Session/token invalidation after password reset| Pending
+36| Session/token invalidation after password reset| To Verify
 37| Authentication endpoint rate limiting| Pending
 
 ---
@@ -442,11 +442,11 @@ Password-reset email should include:
 14. Collaboration and Notifications
 
 #| Feature| Status
-38| Email notifications for task updates| Pending
+38| Email notifications for task updates| To Verify
 39| Activity log for application changes| Pending
 40| Task comments and collaboration| To Verify
-41| Password-reset email notifications| Pending
-42| Email verification notifications| Pending
+41| Password-reset email notifications| To Verify
+42| Email verification notifications| To Verify
 
 ---
 

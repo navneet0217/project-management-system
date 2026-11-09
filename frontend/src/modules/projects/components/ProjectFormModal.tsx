@@ -4,7 +4,7 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { projectsApi } from '../api'
 import { usersApi } from '../../users/api'
 import { useAppSelector } from '../../../store'
-import { PROJECT_STATUSES, toOptions } from '../../../lib/options'
+import { hasRole, PROJECT_STATUSES, toOptions } from '../../../lib/options'
 import type { Project, ProjectPayload, ProjectStatus, UserOption } from '../../../types'
 
 interface FormValues {
@@ -28,14 +28,15 @@ export default function ProjectFormModal({
   onClose: () => void
   onSaved: () => void
 }) {
-  const role = useAppSelector((s) => s.auth.user!.role)
+  const me = useAppSelector((s) => s.auth.user)!
+  const isAdmin = hasRole(me, 'ADMIN')
   const [form] = Form.useForm<FormValues>()
   const [saving, setSaving] = useState(false)
   const [managers, setManagers] = useState<UserOption[]>([])
 
   useEffect(() => {
-    if (open && role === 'ADMIN') usersApi.options('MANAGER').then(setManagers).catch(() => {})
-  }, [open, role])
+    if (open && isAdmin) usersApi.options('MANAGER').then(setManagers).catch(() => {})
+  }, [open, isAdmin])
 
   useEffect(() => {
     if (!open) return
@@ -62,7 +63,7 @@ export default function ProjectFormModal({
       start_date: fmt(v.dates?.[0]),
       end_date: fmt(v.dates?.[1]),
     }
-    if (role === 'ADMIN' && v.manager_id) payload.manager_id = v.manager_id
+    if (isAdmin && v.manager_id) payload.manager_id = v.manager_id
     setSaving(true)
     try {
       if (project) await projectsApi.update(project.id, payload)
@@ -98,7 +99,7 @@ export default function ProjectFormModal({
         <Form.Item name="dates" label="Start / end date">
           <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
         </Form.Item>
-        {role === 'ADMIN' && (
+        {isAdmin && (
           <Form.Item name="manager_id" label="Manager">
             <Select
               allowClear

@@ -57,8 +57,8 @@ export default function UserDetails({
         </Descriptions>
       </Section>
 
-      <Section title="Role">
-        <StatusTag value={user.role} />
+      <Section title="Roles">
+        {(user.roles ?? [user.role]).map((role) => <StatusTag key={role} value={role} />)}
       </Section>
 
       <Section title="Manager">

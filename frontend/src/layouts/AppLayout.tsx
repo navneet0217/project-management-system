@@ -20,6 +20,7 @@ import { StatusTag } from '../components/StatusTag'
 import GlobalSearch from '../components/GlobalSearch'
 import Logo, { APP_NAME } from '../components/Logo'
 import { BRAND_GRADIENT } from '../lib/brand'
+import { hasRole } from '../lib/options'
 
 const { Header, Sider, Content } = Layout
 
@@ -40,12 +41,12 @@ export default function AppLayout() {
       { key: '/projects', icon: <FolderOpenOutlined />, label: 'Projects' },
       { key: '/my-tasks', icon: <CheckSquareOutlined />, label: 'My tasks' },
     ]
-    if (user.role !== 'DEVELOPER') {
+    if (hasRole(user, 'ADMIN') || hasRole(user, 'MANAGER')) {
       all.push({ key: '/tasks', icon: <UnorderedListOutlined />, label: 'All tasks' })
     }
-    if (user.role === 'ADMIN') all.push({ key: '/users', icon: <TeamOutlined />, label: 'Users' })
+    if (hasRole(user, 'ADMIN')) all.push({ key: '/users', icon: <TeamOutlined />, label: 'Users' })
     return all
-  }, [user.role])
+  }, [user])
 
   const selected = items
     .filter((i) => (i.key === '/' ? pathname === '/' : pathname.startsWith(i.key)))
@@ -117,7 +118,7 @@ export default function AppLayout() {
                 {user.full_name.charAt(0).toUpperCase()}
               </Avatar>
               {!isMobile && <span>{user.full_name}</span>}
-              {!isMobile && <StatusTag value={user.role} />}
+              {!isMobile && (user.roles ?? [user.role]).map((role) => <StatusTag key={role} value={role} />)}
             </Space>
           </Dropdown>
         </Header>

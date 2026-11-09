@@ -6,7 +6,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
-from app.models import Priority, ProjectStatus, Role, TaskStatus, User
+from app.models import Priority, ProjectStatus, Role, RoleRecord, TaskStatus, User
 from app.schemas.project import ProjectCreate
 from app.schemas.task import TaskCreate
 from app.services import project_service, task_service
@@ -15,10 +15,12 @@ ADMIN_EMAIL = "admin@demo.dev"
 
 
 def _user(db, email: str, name: str, role: Role) -> User:
+    record = db.scalar(select(RoleRecord).where(RoleRecord.name == role.value)) or RoleRecord(name=role.value)
     user = User(
         email=email,
         full_name=name,
         role=role,
+        role_records=[record],
         hashed_password=hash_password(settings.SEED_PASSWORD),
         email_verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )

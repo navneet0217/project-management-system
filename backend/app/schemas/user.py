@@ -62,6 +62,7 @@ class UserOption(BaseModel):
     id: int
     full_name: str
     role: Role
+    roles: list[Role]
 
 
 class UserOut(UserOption):
@@ -91,6 +92,7 @@ class UserCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
     password: str = Field(min_length=8, max_length=128)
     role: Role = Role.DEVELOPER
+    roles: list[Role] | None = Field(default=None, min_length=1, max_length=3)
 
     _pw = field_validator("password")(_check_password)
 
@@ -98,6 +100,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     full_name: str | None = Field(default=None, min_length=2, max_length=120)
     role: Role | None = None
+    roles: list[Role] | None = Field(default=None, min_length=1, max_length=3)
     is_active: bool | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
 

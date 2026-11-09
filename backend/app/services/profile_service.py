@@ -26,7 +26,7 @@ def get_profile(db: Session, viewer: User, user_id: int) -> UserProfileOut:
     if not target:
         raise NotFound("User not found")
     # Managers use profiles to pick developers for their projects; admins can see everyone.
-    if viewer.role == Role.MANAGER and target.role != Role.DEVELOPER:
+    if not viewer.has_role(Role.ADMIN) and not target.has_role(Role.DEVELOPER):
         raise Forbidden("Managers can only view developer profiles")
 
     member_of = db.scalars(
@@ -39,8 +39,12 @@ def get_profile(db: Session, viewer: User, user_id: int) -> UserProfileOut:
 
     current: list[ProfileProject] = []
     past: list[ProfileProject] = []
-    for relation, projects in (("Member", member_of), ("Manager", managed)):
+    seen_ids: set[int] = set()
+    for relation, projects in (("Manager", managed), ("Member", member_of)):
         for p in projects:
+            if p.id in seen_ids:
+                continue
+            seen_ids.add(p.id)
             item = ProfileProject(id=p.id, name=p.name, status=p.status, relation=relation)
             (past if p.status == ProjectStatus.COMPLETED else current).append(item)
 
@@ -60,7 +64,7 @@ def get_profile(db: Session, viewer: User, user_id: int) -> UserProfileOut:
 
     managers: dict[int, UserOption] = {}
     for p in member_of:
-        if p.manager and p.status != ProjectStatus.COMPLETED:
+        if p.manager and p.manager.id != target.id and p.status != ProjectStatus.COMPLETED:
             managers[p.manager.id] = UserOption.model_validate(p.manager)
 
     tasks = db.scalars(

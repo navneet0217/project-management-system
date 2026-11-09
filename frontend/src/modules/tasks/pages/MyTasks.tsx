@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Button } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { taskTableInitial } from '../../../lib/taskParams'
+import { hasRole } from '../../../lib/options'
 import { projectsApi } from '../../projects/api'
 import { tasksApi } from '../api'
 import { PageHeaderRow } from '../../../components/PageHeaderRow'
@@ -18,7 +19,7 @@ const fetcher = tasksApi.my
 export default function MyTasks() {
   const me = useAppSelector((s) => s.auth.user)!
   const [params] = useSearchParams()
-  const isDeveloper = me.role === 'DEVELOPER'
+  const isDeveloper = hasRole(me, 'DEVELOPER')
   const [version, setVersion] = useState(0)
   const [projects, setProjects] = useState<Project[]>([])
   const [form, setForm] = useState<{ open: boolean; task: Task | null }>({ open: false, task: null })
@@ -27,7 +28,7 @@ export default function MyTasks() {
 
   useEffect(() => {
     // for a developer this is exactly the projects they belong to
-    if (isDeveloper) projectsApi.list({ size: 100 }).then((p) => setProjects(p.items)).catch(() => {})
+    if (isDeveloper) projectsApi.list({ size: 100, member_only: true }).then((p) => setProjects(p.items)).catch(() => {})
   }, [isDeveloper])
 
   return (

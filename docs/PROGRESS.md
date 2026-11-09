@@ -1,5 +1,12 @@
 # Progress Tracker
 
+## Manual showcase checklist (2026-11-09)
+- Added `docs/MANUAL_TESTS.md` with user-run scenarios and local password-reset instructions; manual results remain Not Tested.
+- Multi-role assignment is implemented across user Add/Edit, responses, filtering, profiles, navigation, project/task authorization, assignment and dashboard scoping. Schema uses existing migration 0005; run `alembic upgrade head` before deploying if necessary. Legacy `role` remains a compatibility field; role links control combined access. Manual/browser verification remains pending.
+- Resend Gmail onboarding/reset/allocation tests cover both admin-created and self-signup users with mocked delivery. Added local backend email settings to `backend/.env.example`; real inbox delivery requires configured Resend credentials and an allowed sender/recipient.
+- Local settings now load root `.env`, then `backend/.env`, with process environment variables taking precedence. This shares the root Resend key with local Uvicorn unless locally overridden. No real email or production data was used in automated checks.
+- Verification: 100 backend tests passed in an isolated, network-disabled container; Ruff, frontend TypeScript (`tsc --noEmit`) and oxlint passed. Frontend editor diagnostics are clean. Vite build/browser and real inbox verification remain pending; no isolated Node runtime was available for executing the application/build configuration.
+
 ## Roadmap status (verified 2026-11-08 by running the app, not by reading code)
 Rule: a feature is Done only after it was tested. Evidence = 66 backend tests + a live end-to-end run (API, RBAC, activity log, UI in 3 screen sizes, Kanban drag).
 
@@ -26,7 +33,7 @@ Rule: a feature is Done only after it was tested. Evidence = 66 backend tests + 
 | 21,26 | **Phase 2 (2026-11-08):** Manager column, soft remove + restore (Alembic 0003 `users.deleted_at`), Removed view, `PROJECT_CREATED` in the activity log | 74 backend tests + 18 browser checks |
 
 ### Pending (verified missing by probing the API)
-- **Roles model (24, 25):** each user has ONE role column. No User/Role/Permission tables, no `/roles`.
+- **Roles model (24, 25):** multi-role behavior implemented 2026-11-09; manual verification pending. No custom role/permission administration endpoint.
 - **Activity:** "Member role changed" does not exist (needs the roles model).
 - **Auth (31, 32, 33, 36, 41, 42):** no forgot-password, reset-password or email verification endpoints, no email service.
 - **Notifications (38):** no email on task updates.

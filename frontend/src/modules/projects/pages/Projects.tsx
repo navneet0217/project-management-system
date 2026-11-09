@@ -8,11 +8,11 @@ import { useAppSelector } from '../../../store'
 import { PageHeaderRow } from '../../../components/PageHeaderRow'
 import ProjectFormModal from '../components/ProjectFormModal'
 import { StatusTag } from '../../../components/StatusTag'
-import { PROJECT_STATUSES, toOptions } from '../../../lib/options'
+import { hasRole, PROJECT_STATUSES, toOptions } from '../../../lib/options'
 import type { Page, Project, ProjectStatus } from '../../../types'
 
 export default function Projects() {
-  const role = useAppSelector((s) => s.auth.user!.role)
+  const me = useAppSelector((s) => s.auth.user)!
   const [data, setData] = useState<Page<Project> | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -39,7 +39,7 @@ export default function Projects() {
       <PageHeaderRow
         title="Projects"
         extra={
-          role !== 'DEVELOPER' && (
+          (hasRole(me, 'ADMIN') || hasRole(me, 'MANAGER')) && (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
               New project
             </Button>

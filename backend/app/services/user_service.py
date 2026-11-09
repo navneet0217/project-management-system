@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.exceptions import BadRequest, Conflict, NotFound
 from app.core.security import hash_password
 from app.db.base import utcnow
-from app.models import Project, ProjectMember, ProjectStatus, RefreshToken, Role, User
+from app.models import Project, ProjectMember, ProjectStatus, RefreshToken, Role, RoleRecord, User
 from app.schemas.user import ProjectRef, UserCreate, UserListItem, UserOption, UserUpdate
 
 SORT_COLUMNS = {
@@ -33,7 +33,7 @@ def project_allocations(
     ).unique().all()
     for uid, project in as_member:
         result[uid].append(ProjectRef.model_validate(project))
-        if project.manager:
+        if project.manager and project.manager.id != uid:
             managers[uid][project.manager.id] = UserOption.model_validate(project.manager)
     managed = db.scalars(
         select(Project)
@@ -41,7 +41,8 @@ def project_allocations(
         .order_by(Project.name)
     ).all()
     for project in managed:
-        result[project.manager_id].append(ProjectRef.model_validate(project))
+        if not any(item.id == project.id for item in result[project.manager_id]):
+            result[project.manager_id].append(ProjectRef.model_validate(project))
     return result, {uid: list(m.values()) for uid, m in managers.items()}
 
 
@@ -64,7 +65,7 @@ def list_users(
         like = f"%{search}%"
         stmt = stmt.where(User.full_name.ilike(like) | User.email.ilike(like))
     if role:
-        stmt = stmt.where(User.role == role)
+        stmt = stmt.where(User.with_role(role))
     if is_active is not None:
         stmt = stmt.where(User.is_active.is_(is_active))
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
@@ -88,6 +89,13 @@ def get_user(db: Session, user_id: int) -> User:
     return user
 
 
+def _assign_roles(db: Session, user: User, roles: list[Role]) -> None:
+    assigned = [role for role in Role if role in roles]
+    records = {record.name: record for record in db.scalars(select(RoleRecord)).all()}
+    user.role_records = [records.get(role.value) or RoleRecord(name=role.value) for role in assigned]
+    user.role = assigned[0]
+
+
 def create_user(db: Session, data: UserCreate, verified: bool = True) -> User:
     email = data.email.lower()
     if db.scalar(select(User.id).where(User.email == email)):
@@ -100,6 +108,7 @@ def create_user(db: Session, data: UserCreate, verified: bool = True) -> User:
         email_verified_at=utcnow() if verified else None,  # admin-created accounts are trusted
     )
     db.add(user)
+    _assign_roles(db, user, data.roles or [data.role])
     db.commit()
     return user
 
@@ -107,16 +116,22 @@ def create_user(db: Session, data: UserCreate, verified: bool = True) -> User:
 def update_user(db: Session, actor: User, user_id: int, data: UserUpdate) -> User:
     user = get_user(db, user_id)
     changes = data.model_dump(exclude_unset=True)
+    roles = changes.pop("roles", None)
+    role = changes.pop("role", None)
+    if roles is None and role is not None:
+        roles = [role]
     if user.deleted_at and changes.get("is_active"):
         raise BadRequest("This user was removed. Restore them first.")
     if user.id == actor.id:
         # Stops an admin from locking themselves out of the system.
         if changes.get("is_active") is False:
             raise BadRequest("You cannot deactivate your own account")
-        if "role" in changes and changes["role"] != Role.ADMIN:
+        if roles is not None and Role.ADMIN not in roles:
             raise BadRequest("You cannot remove your own admin role")
     if "password" in changes:
         user.hashed_password = hash_password(changes.pop("password"))
+    if roles is not None:
+        _assign_roles(db, user, roles)
     for field, value in changes.items():
         if value is not None:
             setattr(user, field, value)

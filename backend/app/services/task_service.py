@@ -1,4 +1,4 @@
-from sqlalchemy import case, func, select
+from sqlalchemy import case, false, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.exceptions import BadRequest, Forbidden, NotFound
@@ -48,7 +48,7 @@ def _validate_assignee(db: Session, project: Project, assignee_id: int | None) -
     if assignee_id is None:
         return None
     assignee = db.get(User, assignee_id)
-    if not assignee or not assignee.is_active or assignee.role != Role.DEVELOPER:
+    if not assignee or not assignee.is_active or assignee.deleted_at or not assignee.has_role(Role.DEVELOPER):
         raise BadRequest("Assignee must be an active developer")
     if not db.get(ProjectMember, (project.id, assignee.id)):
         raise BadRequest("Assignee must be a member of this project")
@@ -110,11 +110,14 @@ def my_tasks(
 
 def task_scope(user: User) -> list:
     """Which tasks a user can see across all projects (the dashboard uses the same rule)."""
-    if user.role == Role.ADMIN:
+    if user.has_role(Role.ADMIN):
         return []
-    if user.role == Role.MANAGER:
-        return [Task.project_id.in_(select(Project.id).where(Project.manager_id == user.id))]
-    return [Task.assignee_id == user.id]
+    condition = false()
+    if user.has_role(Role.MANAGER):
+        condition = condition | Task.project_id.in_(select(Project.id).where(Project.manager_id == user.id))
+    if user.has_role(Role.DEVELOPER):
+        condition = condition | (Task.assignee_id == user.id)
+    return [condition]
 
 
 def visible_tasks(
@@ -168,20 +171,22 @@ def _query_tasks(db, conditions, status, priority, assignee_id, search, sort_by,
 
 def _is_owner(user: User, task: Task) -> bool:
     """A developer 'owns' the tasks assigned to them."""
-    return user.role == Role.DEVELOPER and task.assignee_id == user.id
+    return user.has_role(Role.DEVELOPER) and task.assignee_id == user.id
 
 
 def create_task(db: Session, user: User, project_id: int, data: TaskCreate) -> TaskOut:
-    if user.role == Role.DEVELOPER:
-        # Developers create tasks for themselves, in projects they are a member of (404 otherwise).
-        project = project_service.get_viewable(db, user, project_id)
-        if data.assignee_id not in (None, user.id):
-            raise Forbidden("You can only create tasks assigned to yourself")
-        assignee_id = user.id
-    else:
-        project = project_service.get_manageable(db, user, project_id)
+    project = project_service.get_viewable(db, user, project_id)
+    if project_service.can_manage(user, project):
         _validate_assignee(db, project, data.assignee_id)
         assignee_id = data.assignee_id
+    elif user.has_role(Role.DEVELOPER):
+        # Developers create tasks for themselves, in projects they are a member of (404 otherwise).
+        if data.assignee_id not in (None, user.id):
+            raise Forbidden("You can only create tasks assigned to yourself")
+        _validate_assignee(db, project, user.id)
+        assignee_id = user.id
+    else:
+        raise Forbidden("Only the project manager, an admin or a developer member can create tasks")
     task = Task(
         project_id=project.id,
         title=data.title.strip(),

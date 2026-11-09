@@ -3,6 +3,7 @@ import { DatePicker, Form, Input, Modal, Select } from 'antd'
 import dayjs from 'dayjs'
 import { tasksApi } from '../api'
 import { PRIORITIES, toOptions } from '../../../lib/options'
+import { useAppSelector } from '../../../store'
 import type { Priority, Project, Task, UserOption } from '../../../types'
 
 interface FormValues {
@@ -38,8 +39,9 @@ export default function TaskFormModal({
 }) {
   const [form] = Form.useForm<FormValues>()
   const [saving, setSaving] = useState(false)
+  const me = useAppSelector((state) => state.auth.user)!
   const self = mode === 'self'
-  const pickProject = self && !task
+  const pickProject = self && !task && !projectId
 
   useEffect(() => {
     if (!open) return
@@ -69,7 +71,7 @@ export default function TaskFormModal({
         await tasksApi.update(task.id, self ? base : { ...base, assignee_id: v.assignee_id ?? null })
       } else {
         const target = pickProject ? v.project_id! : projectId!
-        await tasksApi.create(target, self ? base : { ...base, assignee_id: v.assignee_id ?? null })
+        await tasksApi.create(target, { ...base, assignee_id: self ? me.id : v.assignee_id ?? null })
       }
       onSaved()
       onClose()

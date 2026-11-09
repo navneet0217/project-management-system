@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import case, distinct, func, select
+from sqlalchemy import and_, case, distinct, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Priority, Project, ProjectMember, ProjectStatus, Role, Task, TaskStatus, User
@@ -33,7 +33,7 @@ def build_dashboard(db: Session, user: User) -> DashboardOut:
         "overdue_tasks": overdue,
     }
 
-    if user.role == Role.ADMIN:
+    if user.has_role(Role.ADMIN):
         summary = {
             "total_users": db.scalar(select(func.count(User.id))) or 0,
             "total_projects": db.scalar(select(func.count(Project.id))) or 0,
@@ -41,7 +41,7 @@ def build_dashboard(db: Session, user: User) -> DashboardOut:
             "completed_projects": db.scalar(select(func.count(Project.id)).where(Project.status == ProjectStatus.COMPLETED)) or 0,
             **common,
         }
-    elif user.role == Role.MANAGER:
+    elif user.has_role(Role.MANAGER):
         mine = select(Project.id).where(Project.manager_id == user.id)
         summary = {
             "managed_projects": db.scalar(select(func.count(Project.id)).where(Project.manager_id == user.id)) or 0,
@@ -55,10 +55,12 @@ def build_dashboard(db: Session, user: User) -> DashboardOut:
 
     done_expr = func.sum(case((Task.status == TaskStatus.DONE, 1), else_=0))
     base = select(Project.id, Project.name, func.count(Task.id), done_expr).select_from(Project)
-    if user.role == Role.ADMIN:
+    if user.has_role(Role.ADMIN):
         base = base.outerjoin(Task, Task.project_id == Project.id)
-    elif user.role == Role.MANAGER:
-        base = base.outerjoin(Task, Task.project_id == Project.id).where(Project.manager_id == user.id)
+    elif user.has_role(Role.MANAGER):
+        base = base.outerjoin(Task, and_(Task.project_id == Project.id, *scope)).where(
+            or_(Project.manager_id == user.id, Task.assignee_id == user.id)
+        )
     else:
         base = base.join(Task, Task.project_id == Project.id).where(Task.assignee_id == user.id)
     progress = []

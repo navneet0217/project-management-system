@@ -1,5 +1,9 @@
+import json
 import re
 from datetime import timedelta
+from types import SimpleNamespace
+
+import pytest
 
 from app.db.base import utcnow
 from app.models import AuthToken, User
@@ -143,3 +147,73 @@ def test_email_endpoints_validate_input(client, world):
     assert client.post("/api/v1/auth/forgot-password", json={"email": "not-an-email"}).status_code == 422
     assert client.post("/api/v1/auth/verify-email", json={"token": "short"}).status_code == 422
     assert client.post("/api/v1/auth/reset-password", json={"token": "short", "password": "BrandNew123"}).status_code == 422
+
+
+def test_email_settings_share_root_config_and_allow_local_overrides(monkeypatch, tmp_path):
+    from app.core.config import BACKEND_DIR, Settings
+
+    assert Settings.model_config["env_file"] == (BACKEND_DIR.parent / ".env", BACKEND_DIR / ".env")
+    shared = tmp_path / "root.env"
+    local = tmp_path / "backend.env"
+    shared.write_text("RESEND_API_KEY=root-test-key\nAPP_URL=http://localhost:8080\n")
+    local.write_text("APP_URL=http://localhost:5173\n")
+    monkeypatch.delenv("RESEND_API_KEY", raising=False)
+    monkeypatch.delenv("APP_URL", raising=False)
+    configured = Settings(_env_file=(shared, local))
+    assert configured.RESEND_API_KEY == "root-test-key"
+    assert configured.APP_URL == "http://localhost:5173"
+    local.write_text("RESEND_API_KEY=local-test-key\n")
+    assert Settings(_env_file=(shared, local)).RESEND_API_KEY == "local-test-key"
+    monkeypatch.setenv("RESEND_API_KEY", "environment-test-key")
+    assert Settings(_env_file=(shared, local)).RESEND_API_KEY == "environment-test-key"
+
+
+@pytest.mark.parametrize("admin_created", [False, True])
+def test_gmail_reset_and_task_allocation_use_resend(client, world, monkeypatch, admin_created):
+    from app.services import email_service
+
+    messages = []
+
+    def capture(request, timeout):
+        assert request.full_url == "https://api.resend.com/emails"
+        assert request.get_header("Authorization") == "Bearer test-resend-key"
+        assert timeout == 10
+        messages.append(json.loads(request.data))
+        return SimpleNamespace(read=lambda: b'{"id":"test-email"}')
+
+    monkeypatch.setattr(email_service.settings, "RESEND_API_KEY", "test-resend-key")
+    monkeypatch.setattr(email_service, "_provider", None)
+    monkeypatch.setattr(email_service.urllib.request, "urlopen", capture)
+    email = "new.member@gmail.com"
+    if admin_created:
+        created = client.post(
+            "/api/v1/users", headers=auth(world.admin),
+            json={"email": email, "full_name": "Gmail Member", "password": PASSWORD, "roles": ["MANAGER", "DEVELOPER"]},
+        )
+        assert created.status_code == 201
+    else:
+        assert signup(client, email=email, roles=["ADMIN"]).status_code == 201
+        verification = re.search(r"token=([\w-]+)", messages[-1]["html"]).group(1)
+        assert client.post("/api/v1/auth/verify-email", json={"token": verification}).status_code == 200
+    session = login(client, email).json()
+    member = client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {session['access_token']}"},
+    ).json()
+    assert member["roles"] == (["MANAGER", "DEVELOPER"] if admin_created else ["DEVELOPER"])
+    messages.clear()
+    assert client.post("/api/v1/auth/forgot-password", json={"email": email}).status_code == 202
+    assert messages[-1]["to"] == [email]
+    reset = re.search(r"token=([\w-]+)", messages[-1]["html"]).group(1)
+    assert client.post("/api/v1/auth/reset-password", json={"token": reset, "password": "Changed123"}).status_code == 200
+    assert login(client, email, "Changed123").status_code == 200
+    assert login(client, email).status_code == 401
+    assert client.post(
+        f"/api/v1/projects/{world.p1.id}/members", json={"user_id": member["id"]}, headers=auth(world.m1),
+    ).status_code == 201
+    messages.clear()
+    assert client.post(
+        f"/api/v1/projects/{world.p1.id}/tasks",
+        json={"title": "Gmail allocation test", "assignee_id": member["id"]}, headers=auth(world.m1),
+    ).status_code == 201
+    assert len(messages) == 1 and messages[0]["to"] == [email]
+    assert "assigned" in messages[0]["subject"].lower()

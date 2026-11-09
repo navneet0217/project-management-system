@@ -8,6 +8,7 @@ export interface UserOption {
   id: number
   full_name: string
   role: Role
+  roles: Role[]
 }
 
 export interface User extends UserOption {

@@ -18,12 +18,13 @@ export interface UserCreatePayload {
   email: string
   full_name: string
   password: string
-  role: Role
+  roles: Role[]
 }
 
 export interface UserUpdatePayload {
   full_name?: string
   role?: Role
+  roles?: Role[]
   is_active?: boolean
   password?: string
 }
