@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { App, Button, Form, Grid, Input, Modal, Segmented, Select, Space, Switch, Table, Tag, Typography } from 'antd'
-import { DeleteOutlined, EyeOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons'
+import { App, Button, Form, Grid, Input, Modal, Segmented, Select, Space, Switch, Table, Tag, Tooltip, Typography } from 'antd'
+import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import SearchInput from '../../../components/SearchInput'
 import UserProfileModal from '../components/UserProfileModal'
@@ -262,24 +262,25 @@ export default function Users() {
             title: 'Actions',
             key: 'actions',
             fixed: screens.lg ? 'right' : undefined,
-            width: 272,
+            width: view === 'removed' ? 112 : 216,
             render: (_, u) =>
               u.deleted_at ? (
-                <Space size="small" wrap style={{ maxWidth: 240 }}>
-                  <Button size="small" icon={<EyeOutlined />} onClick={() => setProfileId(u.id)}>
-                    View profile
-                  </Button>
-                  <Button size="small" type="primary" ghost icon={<UndoOutlined />} onClick={() => restoreUser(u)}>
-                    Restore
-                  </Button>
+                <Space size={6} wrap style={{ maxWidth: 80 }}>
+                  <Tooltip title="View profile">
+                    <Button aria-label={`View profile for ${u.full_name}`} icon={<EyeOutlined />} onClick={() => setProfileId(u.id)} />
+                  </Tooltip>
+                  <Tooltip title="Restore user">
+                    <Button aria-label={`Restore ${u.full_name}`} type="primary" ghost icon={<UndoOutlined />} onClick={() => restoreUser(u)} />
+                  </Tooltip>
                 </Space>
               ) : (
-                <Space size="small" wrap style={{ maxWidth: 240 }}>
-                  <Button size="small" onClick={() => openModal(u)}>
-                    Edit
-                  </Button>
+                <Space size={6} wrap style={{ maxWidth: 184 }}>
+                  <Tooltip title="Edit user">
+                    <Button aria-label={`Edit ${u.full_name}`} icon={<EditOutlined />} onClick={() => openModal(u)} />
+                  </Tooltip>
                   <Switch
                     size="small"
+                    aria-label={`Active status for ${u.full_name}`}
                     checked={u.is_active}
                     loading={togglingId === u.id}
                     disabled={u.id === me.id}
@@ -288,13 +289,13 @@ export default function Users() {
                     onChange={(checked) => toggle(u, checked)}
                     title={u.id === me.id ? 'You cannot deactivate your own account' : undefined}
                   />
-                  <Button size="small" icon={<EyeOutlined />} onClick={() => setProfileId(u.id)}>
-                    View profile
-                  </Button>
+                  <Tooltip title="View profile">
+                    <Button aria-label={`View profile for ${u.full_name}`} icon={<EyeOutlined />} onClick={() => setProfileId(u.id)} />
+                  </Tooltip>
                   {u.id !== me.id && (
-                    <Button size="small" danger icon={<DeleteOutlined />} onClick={() => removeUser(u)}>
-                      Remove
-                    </Button>
+                    <Tooltip title="Remove user">
+                      <Button aria-label={`Remove ${u.full_name}`} danger icon={<DeleteOutlined />} onClick={() => removeUser(u)} />
+                    </Tooltip>
                   )}
                 </Space>
               ),

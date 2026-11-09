@@ -1,5 +1,10 @@
 # Progress Tracker
 
+## Compact Users actions (2026-11-09)
+- Edit, View profile, Remove and Restore are now icon-only buttons with tooltips and user-specific accessible labels. Kept the active/inactive toggle, self-protection and existing confirmation flows.
+- Narrowed Actions to 216 px in Users and 112 px in Removed, preserving desktop-only fixation and wrapping controls on smaller screens.
+- Frontend TypeScript, scoped oxlint and Docker production build passed; deployed only `web`. Browser interaction and visual checks remain pending.
+
 ## Users table mobile Actions column (2026-11-09)
 - Actions was fixed on the right at every viewport, covering user details on narrow screens. It is now fixed only at Ant Design's desktop (`lg`) breakpoint; on mobile/tablet it scrolls with the other columns. Action buttons have a bounded, wrapping layout in both normal and Removed views.
 - Frontend TypeScript, scoped oxlint and Docker production frontend build passed. Rebuilt/recreated only `web`; backend and database were not changed.
