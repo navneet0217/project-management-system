@@ -228,7 +228,7 @@ export default function Users() {
               projects.length ? (
                 <div className="chip-row">
                   {projects.map((p) => (
-                    <Tag key={p.id} color="teal">
+                    <Tag key={p.id} color="cyan">
                       <Link to={`/projects/${p.id}`}>{p.name}</Link>
                     </Tag>
                   ))}

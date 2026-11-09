@@ -10,7 +10,7 @@ function ProjectTags({ projects, empty }: { projects: ProfileProject[]; empty: s
   return (
     <div className="chip-row">
       {projects.map((p) => (
-        <Tag key={`${p.id}-${p.relation}`} color={p.relation === 'Removed' ? 'default' : 'teal'}>
+        <Tag key={`${p.id}-${p.relation}`} color={p.relation === 'Removed' ? 'default' : 'cyan'}>
           <Link to={`/projects/${p.id}`}>{p.name}</Link>
           {p.relation !== 'Member' && <span className="chip-note"> ({p.relation.toLowerCase()})</span>}
         </Tag>

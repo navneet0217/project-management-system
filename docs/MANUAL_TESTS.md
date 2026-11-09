@@ -30,7 +30,7 @@ Use a local/test database. These checks create and change data. Mark each result
 | 14 | As admin, remove a project member with assigned tasks | Membership removed, tasks unassigned, activity recorded | Not Tested |
 | 15 | Try deleting a disposable project containing unfinished tasks | Deletion blocked; after completing its tasks, deletion succeeds | Not Tested |
 | 16 | Open dashboard; inspect KPIs, charts, recent-item popups and View All links | Values reflect test data; links open the relevant lists | Not Tested |
-| 17 | Toggle light/dark mode; reload; check narrow/mobile layout | Theme persists; controls and text remain usable | Not Tested |
+| 17 | Toggle light/dark mode; inspect project tags in the admin Users table and profiles; reload and check narrow/mobile layout | Project names remain readable in both themes; theme persists and controls remain usable | Not Tested |
 | 18 | Log out; revisit a protected screen | Login is required | Not Tested |
 | 19 | As admin, give one user MANAGER + DEVELOPER; save and reopen | Both roles appear in the user table, form and profile | Not Tested |
 | 20 | Give that user their own managed project and membership in another manager's project | Both projects are visible; only their managed project allows member/project administration | Not Tested |

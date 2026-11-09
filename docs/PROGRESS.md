@@ -1,5 +1,10 @@
 # Progress Tracker
 
+## Users project-tag dark-mode contrast (2026-11-09)
+- Replaced the custom `teal` tag color with Ant Design's theme-aware `cyan` preset in the admin Users project column and profile project tags. No API or data changes.
+- Frontend TypeScript, scoped oxlint and Docker production frontend build passed. Rebuilt/recreated only `web`, making the fix available on port 8080 and the public URL.
+- Browser contrast/layout verification was skipped by the user; manual light/dark checks remain pending.
+
 ## Shared showcase environment (2026-11-09)
 - With user approval, backed up Windows and Docker MySQL to `%LOCALAPPDATA%/Tasklane/backups/20261109-132211/`, then replaced Docker `pms` with the Windows snapshot. Windows MySQL was not changed.
 - Rebuilt backend and web from current workspace source and ran `alembic upgrade head`. Production frontend build and Vite configuration typecheck passed.
