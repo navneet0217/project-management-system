@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { App, Button, Form, Input, Modal, Segmented, Select, Space, Switch, Table, Tag, Typography } from 'antd'
+import { App, Button, Form, Grid, Input, Modal, Segmented, Select, Space, Switch, Table, Tag, Typography } from 'antd'
 import { DeleteOutlined, EyeOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import SearchInput from '../../../components/SearchInput'
@@ -29,6 +29,7 @@ const DEFAULT_SORT = { field: 'created_at', order: 'desc' } as const
 
 export default function Users() {
   const { message, modal } = App.useApp()
+  const screens = Grid.useBreakpoint()
   const me = useAppSelector((s) => s.auth.user)!
   const dispatch = useAppDispatch()
   const { sort, sortProps, onTableChange } = useSort<UserSortField>(SORT_FIELDS, DEFAULT_SORT)
@@ -260,10 +261,11 @@ export default function Users() {
           {
             title: 'Actions',
             key: 'actions',
-            fixed: 'right',
+            fixed: screens.lg ? 'right' : undefined,
+            width: 272,
             render: (_, u) =>
               u.deleted_at ? (
-                <Space size="small" wrap>
+                <Space size="small" wrap style={{ maxWidth: 240 }}>
                   <Button size="small" icon={<EyeOutlined />} onClick={() => setProfileId(u.id)}>
                     View profile
                   </Button>
@@ -272,7 +274,7 @@ export default function Users() {
                   </Button>
                 </Space>
               ) : (
-                <Space size="small" wrap>
+                <Space size="small" wrap style={{ maxWidth: 240 }}>
                   <Button size="small" onClick={() => openModal(u)}>
                     Edit
                   </Button>

@@ -38,6 +38,7 @@ Use a local/test database. These checks create and change data. Mark each result
 | 22 | As admin, remove their MANAGER role; try a restricted operation using their existing session | Backend immediately applies the remaining role; reload refreshes navigation | Not Tested |
 | 23 | Try removing your own ADMIN role or saving an empty role selection | Request rejected; admin access preserved | Not Tested |
 | 24 | Create a user with a real Gmail inbox; add as member and allocate a task | Membership and assignment emails arrive; actor receives no email about their own action | Not Tested |
+| 25 | Open Users and Removed views at 360/390/820 px; scroll the table to Actions, then check desktop at 1440 px | User details are visible initially; Actions does not overlay them on mobile/tablet; action controls remain reachable and wrap; desktop Actions remains fixed | Not Tested |
 
 ## Forgot Password Locally
 

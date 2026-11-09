@@ -1,5 +1,10 @@
 # Progress Tracker
 
+## Users table mobile Actions column (2026-11-09)
+- Actions was fixed on the right at every viewport, covering user details on narrow screens. It is now fixed only at Ant Design's desktop (`lg`) breakpoint; on mobile/tablet it scrolls with the other columns. Action buttons have a bounded, wrapping layout in both normal and Removed views.
+- Frontend TypeScript, scoped oxlint and Docker production frontend build passed. Rebuilt/recreated only `web`; backend and database were not changed.
+- Mock-data browser checks at 360/390/820/1440 px were offered but skipped by the user. Manual visibility, horizontal scrolling and action reachability checks remain pending.
+
 ## Users project-tag dark-mode contrast (2026-11-09)
 - Replaced the custom `teal` tag color with Ant Design's theme-aware `cyan` preset in the admin Users project column and profile project tags. No API or data changes.
 - Frontend TypeScript, scoped oxlint and Docker production frontend build passed. Rebuilt/recreated only `web`, making the fix available on port 8080 and the public URL.
