@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Select, Space, Table, Tag } from 'antd'
+import { Button, Select, Space, Table, Tag, Tooltip } from 'antd'
 import SearchInput from '../../../components/SearchInput'
 import DeleteTaskModal from '../../tasks/components/DeleteTaskModal'
-import { DeleteOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { tasksApi, type TaskListParams } from '../../tasks/api'
 import TaskStatusSelect from '../../tasks/components/TaskStatusSelect'
 import { StatusTag } from '../../../components/StatusTag'
@@ -139,10 +139,12 @@ export default function TaskListTab({
             render: (_, t) =>
               canManage && (
                 <Space>
-                  <Button size="small" onClick={() => onEdit(t)}>
-                    Edit
-                  </Button>
-                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => setDeleting(t)} />
+                  <Tooltip title="Edit task">
+                    <Button aria-label="Edit task" size="small" icon={<EditOutlined />} onClick={() => onEdit(t)} />
+                  </Tooltip>
+                  <Tooltip title="Delete task">
+                    <Button aria-label="Delete task" size="small" danger icon={<DeleteOutlined />} onClick={() => setDeleting(t)} />
+                  </Tooltip>
                 </Space>
               ),
           },

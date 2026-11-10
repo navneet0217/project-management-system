@@ -82,9 +82,11 @@ export default function Login() {
             autoComplete="current-password"
           />
         </Form.Item>
+        {/* Forgot password is switched off for now (re-enable later)
         <div style={{ textAlign: 'right', marginTop: -12, marginBottom: 16 }}>
           <Link to="/forgot-password">Forgot password?</Link>
         </div>
+        */}
         <Button type="primary" htmlType="submit" block loading={loading}>
           Sign in
         </Button>

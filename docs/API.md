@@ -14,10 +14,20 @@ Lists return `{items, total, page, size}`.
 | POST | /auth/signup | anyone | body `{email, full_name, password}` -> 201 `{detail}`; sends a verification email, no tokens until verified |
 | POST | /auth/verify-email | anyone | body `{token}`; single use, 24 h |
 | POST | /auth/resend-verification | anyone | body `{email}` -> 202 (never reveals if the email exists) |
-| POST | /auth/forgot-password | anyone | body `{email}` -> 202 (same privacy rule) |
-| POST | /auth/reset-password | anyone | body `{token, password}`; 30 min, single use, revokes all refresh tokens |
+| ~~POST~~ | ~~/auth/forgot-password~~ (disabled for now) | anyone | body `{email}` -> 202 (same privacy rule) |
+| ~~POST~~ | ~~/auth/reset-password~~ (disabled for now) | anyone | body `{token, password}`; 30 min, single use, revokes all refresh tokens |
 
-Login returns 403 "verify your email" until the address is verified. Admin-created, seeded and pre-existing users count as verified (migration 0004). Task, comment and member changes email the project manager and the assignee (never the actor) after the DB commit. Email uses Resend when `RESEND_API_KEY` is set, otherwise it is logged to the console.
+Login returns 403 "verify your email" until the address is verified. Admin-created, seeded and pre-existing users count as verified (migration 0004). Email is only used for signup verification (Resend when `RESEND_API_KEY` is set, otherwise logged).
+
+## Notifications (in-app, migration 0006)
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | /notifications | any user | own latest 30: `{items:[{id, project_id, title, body, is_read, created_at}], unread}` |
+| POST | /notifications/{id}/read | any user | marks own notification read, 204 |
+| POST | /notifications/read-all | any user | 204 |
+
+Task, comment and member changes notify the project manager and the assignee (never the actor), in the same transaction as the change.
 
 Access token lives 15 min, refresh token 7 days. Frontend: on 401, call /auth/refresh once, retry the request;
 if that fails, log out.
@@ -84,7 +94,7 @@ admin@demo.dev | meera.manager@demo.dev | rohan.manager@demo.dev | dev.isha@demo
 
 Set `RESEND_API_KEY`, `EMAIL_FROM`, and `APP_URL` in the root `.env`. Local Uvicorn reads this first, then `backend/.env`; backend values override root values (including an explicitly empty key). Process environment variables take precedence over both. Docker Compose passes root settings into the container. Restart the backend after changes; for changed Compose environment values, recreate it (`docker compose up -d --force-recreate backend` from the repository root). `APP_URL` must be the frontend origin, usually `http://localhost:5173` for Vite or `http://localhost:8080` for Docker.
 
-Gmail and other valid addresses use the same flow: signup verifies inbox ownership, while admin-created users are already trusted. A Gmail-looking address alone does not prove that the inbox exists. Resend's sandbox sender only delivers to the account owner's address; verify a sender domain and use its sender address to deliver to arbitrary registered users. No key means console-only email. Forgot-password confirmation does not guarantee delivery: inspect backend logs for provider errors. Task allocation, updates, comments and membership changes use the same provider after successful commit, excluding the actor and inactive/unverified recipients.
+Gmail and other valid addresses use the same flow: signup verifies inbox ownership, while admin-created users are already trusted. A Gmail-looking address alone does not prove that the inbox exists. Resend's sandbox sender only delivers to the account owner's address; verify a sender domain and use its sender address to deliver to arbitrary registered users. No key means console-only email. Forgot-password confirmation does not guarantee delivery: inspect backend logs for provider errors. Task and membership changes no longer send email: they create in-app notifications (bell icon).
 
 ## Project activity (audit log)
 Stored in table `project_activities` (Alembic 0002). Written by `audit_service.record()` in the same transaction as the change.

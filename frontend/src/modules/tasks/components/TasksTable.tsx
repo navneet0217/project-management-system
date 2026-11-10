@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Select, Space, Table, Tag } from 'antd'
+import { Button, Select, Space, Table, Tag, Tooltip } from 'antd'
+import { EyeOutlined } from '@ant-design/icons'
 import { type TaskListParams } from '../api'
 import { useSort } from '../../../hooks/useSort'
 import { formatDate } from '../../../lib/dates'
@@ -164,7 +165,9 @@ export default function TasksTable({
                   key: 'actions',
                   render: (_: unknown, t: Task) => (
                     <Space size="small">
-                      <a onClick={() => setDrawerTask(t)}>View</a>
+                      <Tooltip title="View task">
+                        <Button aria-label="View task" icon={<EyeOutlined />} onClick={() => setDrawerTask(t)} />
+                      </Tooltip>
                       {actions(t, load)}
                     </Space>
                   ),

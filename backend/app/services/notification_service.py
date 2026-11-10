@@ -1,14 +1,13 @@
-"""Email notifications for project/task activity.
+"""In-app notifications (bell icon) for project/task activity.
 
-audit_service.record() calls queue() for every audited action. Emails wait in the session's outbox and are
-only sent after the transaction commits (a rolled-back change must never produce an email).
+audit_service.record() calls queue() for every audited action. The row is added to the caller's session, so it is
+committed or rolled back together with the change itself.
 """
 
-from sqlalchemy import event
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
-from app.models import AuditAction, AuditEntity, Project, Task, User
-from app.services import email_service
+from app.models import AuditAction, AuditEntity, Notification, Project, Task, User
 
 
 def _recipients(db: Session, project: Project, task: Task | None, target_user_id: int | None, actor: User | None) -> list[User]:
@@ -73,29 +72,30 @@ def queue(
     task = db.get(Task, entity_id) if entity_type == AuditEntity.TASK and entity_id else None
     if action == AuditAction.TASK_CREATED:
         task = None  # the assignee is told by the TASK_ASSIGNED event that follows, so they get one clear email
-    outbox = db.info.setdefault("outbox", [])
+    # in the same transaction as the change: a rolled-back change leaves no notification behind
+    seen: set[int] = set()
+    headline, detail = text
     for user in _recipients(db, project, task, target_user_id, actor):
-        if any(m.to == user.email for m in outbox):
-            continue  # one email per person per change (creating an assigned task logs two events)
-        headline, detail = text
-        outbox.append(
-            email_service.notification_email(user.email, user.full_name, f"{headline}: {entity_label or ''}".strip(": "), detail, project.id)
-        )
+        if user.id in seen:
+            continue  # one notification per person per change (creating an assigned task logs two events)
+        seen.add(user.id)
+        title = f"{headline}: {entity_label}" if entity_label else headline
+        db.add(Notification(user_id=user.id, project_id=project.id, title=title[:200], body=detail[:500]))
 
 
-def flush(db: Session) -> None:
-    for email in db.info.pop("outbox", []):
-        email_service.send(email)
+def list_for(db: Session, user: User, limit: int = 30) -> tuple[list[Notification], int]:
+    rows = db.scalars(
+        select(Notification).where(Notification.user_id == user.id).order_by(Notification.id.desc()).limit(limit)
+    ).all()
+    unread = db.scalar(
+        select(func.count()).select_from(Notification).where(Notification.user_id == user.id, Notification.is_read.is_(False))
+    )
+    return list(rows), unread or 0
 
 
-def discard(db: Session) -> None:
-    db.info.pop("outbox", None)
-
-@event.listens_for(Session, "after_commit")
-def _send_after_commit(session: Session) -> None:
-    flush(session)
-
-
-@event.listens_for(Session, "after_rollback")
-def _drop_on_rollback(session: Session) -> None:
-    discard(session)
+def mark_read(db: Session, user: User, notification_id: int | None = None) -> None:
+    stmt = update(Notification).where(Notification.user_id == user.id, Notification.is_read.is_(False))
+    if notification_id is not None:
+        stmt = stmt.where(Notification.id == notification_id)
+    db.execute(stmt.values(is_read=True))
+    db.commit()

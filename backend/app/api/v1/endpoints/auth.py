@@ -10,7 +10,6 @@ from app.schemas.user import (
     LoginRequest,
     MessageOut,
     RefreshRequest,
-    ResetPasswordRequest,
     SignupRequest,
     TokenPair,
     TokenRequest,
@@ -46,16 +45,17 @@ def resend_verification(data: EmailRequest, db: Session = Depends(get_db)):
     return MessageOut(detail="If that account needs verification, a new link is on its way.")
 
 
-@router.post("/forgot-password", response_model=MessageOut, status_code=202, dependencies=[Depends(auth_rate_limit)])
-def forgot_password(data: EmailRequest, db: Session = Depends(get_db)):
-    auth_service.forgot_password(db, data.email)
-    return MessageOut(detail="If that email is registered, a reset link is on its way.")
-
-
-@router.post("/reset-password", response_model=MessageOut, dependencies=[Depends(auth_rate_limit)])
-def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
-    auth_service.reset_password(db, data.token, data.password)
-    return MessageOut(detail="Password updated. Please sign in with your new password.")
+# Forgot/reset password is switched off for now (re-enable later; service functions and tests are kept).
+# @router.post("/forgot-password", response_model=MessageOut, status_code=202, dependencies=[Depends(auth_rate_limit)])
+# def forgot_password(data: EmailRequest, db: Session = Depends(get_db)):
+#     auth_service.forgot_password(db, data.email)
+#     return MessageOut(detail="If that email is registered, a reset link is on its way.")
+#
+#
+# @router.post("/reset-password", response_model=MessageOut, dependencies=[Depends(auth_rate_limit)])
+# def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
+#     auth_service.reset_password(db, data.token, data.password)
+#     return MessageOut(detail="Password updated. Please sign in with your new password.")
 
 
 @router.post("/login", response_model=TokenPair, dependencies=[Depends(auth_rate_limit)])

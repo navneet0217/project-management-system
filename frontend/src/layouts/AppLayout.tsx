@@ -1,6 +1,6 @@
 import { Suspense, useMemo } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Avatar, Button, Dropdown, Grid, Layout, Menu, Skeleton, Space, Tooltip, theme } from 'antd'
+import { Avatar, Button, Grid, Layout, Menu, Skeleton, Space, Tooltip, theme } from 'antd'
 import {
   CheckSquareOutlined,
   DashboardOutlined,
@@ -16,8 +16,8 @@ import {
 import { logout } from '../modules/auth/authSlice'
 import { setSiderCollapsed, toggleDarkMode } from '../store/uiSlice'
 import { useAppDispatch, useAppSelector } from '../store'
-import { StatusTag } from '../components/StatusTag'
 import GlobalSearch from '../components/GlobalSearch'
+import NotificationBell from '../modules/notifications/NotificationBell'
 import Logo, { APP_NAME } from '../components/Logo'
 import { BRAND_GRADIENT } from '../lib/brand'
 import { hasRole } from '../lib/options'
@@ -98,6 +98,7 @@ export default function AppLayout() {
           style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
         >
           <GlobalSearch />
+          <NotificationBell />
           <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
             <Button
               type="text"
@@ -107,20 +108,15 @@ export default function AppLayout() {
               onClick={() => dispatch(toggleDarkMode())}
             />
           </Tooltip>
-          <Dropdown
-            menu={{
-              items: [{ key: 'logout', icon: <LogoutOutlined />, label: 'Log out' }],
-              onClick: onLogout,
-            }}
-          >
-            <Space style={{ cursor: 'pointer' }}>
-              <Avatar style={{ background: BRAND_GRADIENT }}>
-                {user.full_name.charAt(0).toUpperCase()}
-              </Avatar>
-              {!isMobile && <span>{user.full_name}</span>}
-              {!isMobile && (user.roles ?? [user.role]).map((role) => <StatusTag key={role} value={role} />)}
-            </Space>
-          </Dropdown>
+          <Space>
+            <Avatar style={{ background: BRAND_GRADIENT }}>
+              {user.full_name.charAt(0).toUpperCase()}
+            </Avatar>
+            {!isMobile && <span>{user.full_name}</span>}
+          </Space>
+          <Tooltip title="Log out">
+            <Button type="text" shape="circle" aria-label="Log out" icon={<LogoutOutlined />} onClick={onLogout} />
+          </Tooltip>
         </Header>
         <Content className="app-content">
           {/* key = path, so every page change replays the fade-in animation */}

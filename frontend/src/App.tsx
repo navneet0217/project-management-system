@@ -10,8 +10,9 @@ import { BRAND } from './lib/brand'
 // Pages load on demand, so the first screen downloads far less JavaScript.
 const Login = lazy(() => import('./modules/auth/pages/Login'))
 const Signup = lazy(() => import('./modules/auth/pages/Signup'))
-const ForgotPassword = lazy(() => import('./modules/auth/pages/ForgotPassword'))
-const ResetPassword = lazy(() => import('./modules/auth/pages/ResetPassword'))
+// Forgot/reset password is switched off for now (re-enable later):
+// const ForgotPassword = lazy(() => import('./modules/auth/pages/ForgotPassword'))
+// const ResetPassword = lazy(() => import('./modules/auth/pages/ResetPassword'))
 const VerifyEmail = lazy(() => import('./modules/auth/pages/VerifyEmail'))
 const Dashboard = lazy(() => import('./modules/dashboard/pages/Dashboard'))
 const Projects = lazy(() => import('./modules/projects/pages/Projects'))
@@ -82,8 +83,8 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
               <Route path="/signup" element={<RedirectIfAuthed><Signup /></RedirectIfAuthed>} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+              {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
+              {/* <Route path="/reset-password" element={<ResetPassword />} /> */}
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>

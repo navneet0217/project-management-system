@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Descriptions, Popconfirm, Progress, Space, Typography, message } from 'antd'
+import { Button, Card, Descriptions, Popconfirm, Progress, Space, Tooltip, Typography, message } from 'antd'
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { projectsApi } from '../api'
 import ProjectFormModal from './ProjectFormModal'
@@ -38,17 +38,17 @@ export default function ProjectSummary({
         </Typography.Title>
         {canManage && (
           <Space>
-            <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>
-              Edit
-            </Button>
+            <Tooltip title="Edit project">
+              <Button aria-label="Edit project" icon={<EditOutlined />} onClick={() => setEditing(true)} />
+            </Tooltip>
             <Popconfirm
               title="Delete this project?"
               description="Projects with open tasks cannot be deleted."
               onConfirm={remove}
             >
-              <Button danger icon={<DeleteOutlined />}>
-                Delete
-              </Button>
+              <Tooltip title="Delete project">
+                <Button aria-label="Delete project" danger icon={<DeleteOutlined />} />
+              </Tooltip>
             </Popconfirm>
           </Space>
         )}

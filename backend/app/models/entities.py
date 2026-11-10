@@ -311,6 +311,22 @@ class UserRole(Base):
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
 
 
+class Notification(Base):
+    """In-app notification shown under the bell icon."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    title: Mapped[str] = mapped_column(String(200))
+    body: Mapped[str] = mapped_column(String(500))
+    is_read: Mapped[bool] = mapped_column(default=False, server_default=text("0"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP"), index=True
+    )
+
+
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 

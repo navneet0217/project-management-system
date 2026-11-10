@@ -52,7 +52,12 @@ export function errorMessage(error: unknown): string {
   if (Array.isArray(detail) && detail.length) {
     return detail.map((d: { msg?: string }) => d.msg).filter(Boolean).join(', ')
   }
-  return (error as Error)?.message || 'Something went wrong'
+  const status = (error as AxiosError)?.response?.status
+  if (status === 401) return 'Incorrect email or password'
+  if (status === 429) return 'Too many attempts. Please wait a minute and try again.'
+  if (status && status >= 500) return 'The server had a problem. Please try again shortly.'
+  if (!status && (error as AxiosError)?.request) return 'Cannot reach the server. Check your connection.'
+  return 'Something went wrong'
 }
 
 api.interceptors.response.use(

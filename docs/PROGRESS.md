@@ -77,7 +77,7 @@ Rule: a feature is Done only after it was tested. Evidence = 66 backend tests + 
 
 ## Auth pages
 - Signup: `POST /api/v1/auth/signup` {email, full_name, password}; role is always DEVELOPER (server-side). Since migration 0004 it returns no tokens: the user must click the emailed link (`/verify-email`). Also `/forgot-password`, `/reset-password`. Pages share `components/AuthShell.tsx`.
-- Email (Resend, `services/email_service.py`) + task-update notifications (`services/notification_service.py`, hooked into `audit_service.record`). Env: `RESEND_API_KEY`, `EMAIL_FROM`, `APP_URL`. Sandbox sender `onboarding@resend.dev` only delivers to the Resend account owner until a domain is verified. 92 backend tests pass.
+- Task-update notifications are now IN-APP (bell icon, table `notifications`, migration 0006, `services/notification_service.py` hooked into `audit_service.record`). Forgot/reset password is commented out for now (backend endpoints, frontend link and routes); email (Resend, `services/email_service.py`) is only used for signup verification. Env: `RESEND_API_KEY`, `EMAIL_FROM`, `APP_URL`. Sandbox sender `onboarding@resend.dev` only delivers to the Resend account owner until a domain is verified. 92 backend tests pass.
 - Next idea: SSO via OAuth2/OIDC (Google/GitHub), see chat notes.
 
 ## Docker / CI-CD (built, local stack verified)

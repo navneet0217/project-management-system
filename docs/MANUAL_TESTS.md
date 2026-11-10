@@ -7,7 +7,7 @@ Use a local/test database. These checks create and change data. Mark each result
 - Open your running app (Vite: http://localhost:5173; Docker: http://localhost:8080).
 - Start Docker first: Vite now sends `/api` to port 8080, so Vite, Docker and Cloudflare share the same database. Sign in separately on each origin. Source-code changes require a Docker rebuild to update 8080/public, even though Vite updates immediately.
 - Log in as `admin@demo.dev` using its current password. Confirm the name is Navneet Admin if the SQL rename was committed.
-- In Users, create one MANAGER and two DEVELOPER accounts using distinct test emails. Use an inbox you control for the password-reset test. Admin-created accounts can log in without email verification.
+- In Users, create one MANAGER and two DEVELOPER accounts using distinct test emails. Admin-created accounts can log in without email verification.
 - Use separate browser profiles/private sessions to demonstrate different users.
 
 ## Showcase Checklist
@@ -37,22 +37,24 @@ Use a local/test database. These checks create and change data. Mark each result
 | 21 | Assign a task to that mixed-role user in the other project; log in as them | Task appears in My Tasks and can be edited; they cannot reassign it or manage that project | Not Tested |
 | 22 | As admin, remove their MANAGER role; try a restricted operation using their existing session | Backend immediately applies the remaining role; reload refreshes navigation | Not Tested |
 | 23 | Try removing your own ADMIN role or saving an empty role selection | Request rejected; admin access preserved | Not Tested |
-| 24 | Create a user with a real Gmail inbox; add as member and allocate a task | Membership and assignment emails arrive; actor receives no email about their own action | Not Tested |
+| 24 | Add a developer as project member and assign them a task (as manager) | The developer's bell shows both notifications; the manager's bell shows none for their own actions | Not Tested |
 | 25 | Open Users and Removed at 360/390/820/1440 px; scroll to Actions, hover/focus each icon and open Edit/Profile; check Remove confirmation and Restore using disposable users | Icon actions have tooltips and accessible names; status toggle remains usable; compact Actions does not overlay data on mobile/tablet and stays fixed on desktop; existing safeguards still work | Not Tested |
 
-## Forgot Password Locally
+## Notifications (bell icon)
 
-1. Use a disposable active account with a real email you control, not `admin@demo.dev`.
-2. Log out, select Forgot Password, submit that email. Expect a generic confirmation (not proof of delivery).
-3. If `RESEND_API_KEY` is unset, the reset email/link is printed in backend logs, not delivered. For Docker, run `docker compose logs --tail=100 backend` from the repository root; for a local backend, inspect its terminal.
-4. If Resend is configured, check the inbox and backend errors. Sandbox delivery is limited to the Resend account owner's email until a sending domain is verified.
-5. Set shared email configuration in root `.env`; local Uvicorn also reads `backend/.env`, whose values override root settings. Ensure `APP_URL` matches the running frontend origin. Restart local Uvicorn after changing configuration; for Compose environment changes run `docker compose up -d --force-recreate backend` from the repository root.
-6. Open the reset link, enter a password with at least 8 characters, a letter and a number. Confirm new-password login succeeds and old-password login fails.
-7. Reuse the link: expect rejection. Request two links: only the newest should work. An unknown email should get the same generic confirmation.
+Notifications are in-app only: no email is needed. Use two browser profiles (for example manager and developer).
 
-Reset links expire after 30 minutes by default. Existing refresh tokens are revoked; already-issued access tokens are not immediately invalidated by this implementation. Never share reset links or screenshots containing tokens.
+1. As the manager, assign a task to the developer. In the developer's session the bell in the header shows a red count within 30 seconds (or open the bell to refresh at once).
+2. Open the bell: the title and text name the task and who did it. Click the item: it is marked read and opens the project.
+3. Have the developer change the task status or add a comment: the manager's bell gets a notification, the developer's own bell does not (nobody is notified about their own action).
+4. Use "Mark all read": the count clears. Reload: it stays cleared.
+5. Adding a member, reassigning, deleting a task (with its reason) and comments also notify the people involved.
+
+## Forgot Password (switched off for now)
+
+The Forgot password link, its pages and the `/auth/forgot-password` and `/auth/reset-password` endpoints are commented out and will be re-enabled later. Do not demo it. Signup still sends a verification email (needs `RESEND_API_KEY`; the Resend sandbox only delivers to the account owner's address). Admin-created users need no email, so demo with those.
 
 ## Current Limits
 
 - Multiple users can share roles; one user can have multiple roles through admin Add/Edit User. Permissions combine, but manager access remains limited to their own projects. Signup cannot grant privileged roles. The dashboard uses the highest assigned role.
-- Automated reset tests use a test database and captured email, not your actual SMTP/Resend delivery or browser. Complete the local steps above before claiming the deployed flow works.
+- Forgot password is disabled; its automated tests are skipped. Notifications refresh every 30 seconds (no websockets).

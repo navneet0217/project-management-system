@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Button } from 'antd'
+import { Button, Tooltip } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { taskTableInitial } from '../../../lib/taskParams'
 import { hasRole } from '../../../lib/options'
@@ -51,14 +51,14 @@ export default function MyTasks() {
         actions={(task) =>
           isDeveloper && (
             <>
-              <Button size="small" icon={<EditOutlined />} onClick={() => setForm({ open: true, task })}>
-                Edit
-              </Button>
+              <Tooltip title="Edit task">
+                <Button aria-label="Edit task" icon={<EditOutlined />} onClick={() => setForm({ open: true, task })} />
+              </Tooltip>
               {/* a developer may only delete tasks they created themselves; the server enforces this too */}
               {task.created_by === me.id && (
-                <Button size="small" danger icon={<DeleteOutlined />} onClick={() => setDeleting(task)}>
-                  Delete
-                </Button>
+                <Tooltip title="Delete task">
+                  <Button aria-label="Delete task" danger icon={<DeleteOutlined />} onClick={() => setDeleting(task)} />
+                </Tooltip>
               )}
             </>
           )

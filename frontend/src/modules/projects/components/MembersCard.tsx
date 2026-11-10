@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Avatar, Button, Card, List, Popconfirm, Select, Space, Tag } from 'antd'
+import { DeleteOutlined } from '@ant-design/icons'
+import { Avatar, Button, Card, List, Popconfirm, Select, Space, Tag, Tooltip } from 'antd'
 import { projectsApi } from '../api'
 import { usersApi } from '../../users/api'
 import AddMemberModal from './AddMemberModal'
@@ -66,9 +67,9 @@ export default function MembersCard({
                       title="Remove member? Their tasks here become unassigned."
                       onConfirm={() => remove(m.id)}
                     >
-                      <Button size="small" danger>
-                        Remove
-                      </Button>
+                      <Tooltip title="Remove member">
+                        <Button aria-label={`Remove ${m.full_name}`} size="small" danger icon={<DeleteOutlined />} />
+                      </Tooltip>
                     </Popconfirm>,
                   ]
                 : undefined
