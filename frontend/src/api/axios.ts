@@ -47,6 +47,7 @@ function refreshAccessToken(): Promise<string> {
 }
 
 export function errorMessage(error: unknown): string {
+  if (typeof error === 'string') return error
   const detail = (error as AxiosError<{ detail?: unknown }>)?.response?.data?.detail
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail) && detail.length) {

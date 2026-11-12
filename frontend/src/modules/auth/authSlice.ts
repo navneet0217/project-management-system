@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { authApi } from './api'
-import { REFRESH_KEY } from '../../api/axios'
+import { REFRESH_KEY, errorMessage } from '../../api/axios'
 import type { TokenPair, User } from '../../types'
 
 interface AuthState {
@@ -20,8 +20,14 @@ async function startSession(tokens: TokenPair, dispatch: (a: unknown) => unknown
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (cred: { email: string; password: string }, { dispatch }) =>
-    startSession(await authApi.login(cred.email, cred.password), dispatch),
+  async (cred: { email: string; password: string }, { dispatch, rejectWithValue }) => {
+    try {
+      return await startSession(await authApi.login(cred.email, cred.password), dispatch)
+    } catch (e) {
+      // keep the readable message: unwrap() would otherwise drop the HTTP response details
+      return rejectWithValue(errorMessage(e))
+    }
+  },
 )
 
 // Restore the session on page load using the stored refresh token.
