@@ -6,6 +6,7 @@ os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-long-enough-for-hs256-tests"
 os.environ["RATE_LIMIT_PER_MINUTE"] = "1000"
 os.environ["EMAIL_ASYNC"] = "false"  # send inline so tests can read the outbox right away
+os.environ["REQUIRE_EMAIL_VERIFICATION"] = "true"  # the verification flow is what these tests cover
 os.environ["RESEND_API_KEY"] = ""  # tests never talk to Resend
 
 import pytest  # noqa: E402

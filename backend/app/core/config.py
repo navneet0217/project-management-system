@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     EMAIL_ASYNC: bool = True  # send in a background thread so requests are not slowed down
     RESET_TOKEN_MINUTES: int = 30
     VERIFY_TOKEN_HOURS: int = 24
+    # Off by default while the Resend sandbox can only deliver to the account owner; turn on once a domain is verified.
+    REQUIRE_EMAIL_VERIFICATION: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:

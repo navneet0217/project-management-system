@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.rate_limit import auth_rate_limit
 from app.db.session import get_db
 from app.models import Role, User
@@ -27,8 +28,10 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
     user = user_service.create_user(
         db,
         UserCreate(email=data.email, full_name=data.full_name, password=data.password, role=Role.DEVELOPER),
-        verified=False,
+        verified=not settings.REQUIRE_EMAIL_VERIFICATION,
     )
+    if not settings.REQUIRE_EMAIL_VERIFICATION:
+        return MessageOut(detail="Account created. You can sign in now.")
     auth_service.send_verification(db, user)
     return MessageOut(detail="Account created. Check your email for the verification link.")
 

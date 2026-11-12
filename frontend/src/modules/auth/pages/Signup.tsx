@@ -17,14 +17,14 @@ interface SignupForm {
 export default function Signup() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sentTo, setSentTo] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
 
   const onFinish = async ({ full_name, email, password }: SignupForm) => {
     setLoading(true)
     setError(null)
     try {
-      await authApi.signup({ full_name, email, password })
-      setSentTo(email)
+      const res = await authApi.signup({ full_name, email, password })
+      setDone(res.detail)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -32,14 +32,10 @@ export default function Signup() {
     }
   }
 
-  if (sentTo) {
+  if (done) {
     return (
-      <AuthShell
-        title="Check your email"
-        subtitle={`We sent a verification link to ${sentTo}. Open it to activate your account.`}
-        footer={<Link to="/login">Back to sign in</Link>}
-      >
-        <Alert type="success" showIcon title="Account created. The link is valid for 24 hours." />
+      <AuthShell title="Account created" subtitle="" footer={<Link to="/login">Go to sign in</Link>}>
+        <Alert type="success" showIcon title={done} />
       </AuthShell>
     )
   }
